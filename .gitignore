@@ -1,0 +1,111 @@
+# Python bytecode
+**/__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv
+.venv
+env
+
+# Packaging / build artifacts
+build/
+dist/
+wheels/
+*.egg
+*.egg-info/
+pip-wheel-metadata/
+
+# Test, type-check, and lint caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.pytype/
+.tox/
+.nox/
+
+# Coverage
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+# secrets file for act, tool for local GitHub Actions testing
+.secrets
+
+# Logs
+*.log
+logs/
+
+# Local databases (e.g. LangGraph SQLite checkpointers)
+*.sqlite
+*.sqlite3
+*.db
+
+# IDE / editor
+.vscode
+.idea/
+*.swp
+*.swo
+*.bak
+*.orig
+*~
+
+# Generic cache dirs (covers tool-specific caches not enumerated above)
+**/.cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Session memory
+.remember
+
+# Claude Code per-project session state (transcripts/history).
+# `.claude/agents/` and other shared config IS meant to be committed --
+# only the runtime `projects/` subtree is excluded.
+.claude/projects/
+
+# Agent configuration
+**/opencode.json
+
+# Node
+node_modules/
+
+# Frontend build outputs
+.next/
+.turbo/
+out/
+*.tsbuildinfo
+
+# Convex auto-generated code
+**/_generated/
+.convex/
+
+# Credentials / keys (defense-in-depth -- these should NEVER be committed)
+*.pem
+*.key
+*.pfx
+*.p12
+*.crt
+*.cer
+*.der
+credentials.json
+service-account*.json
+gcp-key*.json
+aws-credentials*
+
+# Convex AI files / agent skills (regenerable via `npx convex ai-files install`)
+multiplayer-ai/ai/
+multiplayer-ai/skills/
+multiplayer-ai/skills-lock.json

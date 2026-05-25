@@ -1,0 +1,2 @@
+# Slack channel log dumps land here (filesystem-natural, append-only).
+# Kept empty in the scaffold; populated by the agent over time.

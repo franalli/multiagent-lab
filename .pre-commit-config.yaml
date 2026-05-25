@@ -1,0 +1,45 @@
+# Pre-commit hooks: secret scanning + basic linting.
+# Install:   pre-commit install
+# Run all:   pre-commit run --all-files
+# Skip once: SKIP=hook_id git commit ...   (do not use for secret/key hooks)
+
+# Vendored examples and generated code are excluded from every hook below.
+exclude: |
+  (?x)^(
+    modal-examples-main/.*|
+    multiplayer-ai/(_generated|skills|ai)/.*|
+    multiplayer-ai/convex/_generated/.*|
+    multiplayer-ai/volume/.*|
+    \.venv/.*|
+    .*/node_modules/.*|
+    .*/__pycache__/.*
+  )$
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ["--baseline", ".secrets.baseline"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.13
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
