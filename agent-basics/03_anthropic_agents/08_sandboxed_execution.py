@@ -116,6 +116,7 @@ def _build_limits(cpu_seconds: int, memory_mb: int, max_procs: int, max_file_mb:
 async def run_in_sandbox(
     code: str,
     *,
+    args: list[str] | None = None,
     timeout_s: float = DEFAULT_TIMEOUT_S,
     cpu_seconds: int = DEFAULT_CPU_SECONDS,
     memory_mb: int = DEFAULT_MEMORY_MB,
@@ -136,6 +137,11 @@ async def run_in_sandbox(
          even a child that ignores SIGTERM or spawned helpers gets reaped.
       5. Output truncation so a noisy program can't blow up the caller's context.
 
+    `args`, if given, are appended after `code` on the command line, so they
+    arrive as `sys.argv[1:]` inside the program (`sys.argv[0]` is "-c"). That's
+    how a skill's bundled script (run via 07's run_skill_script) receives, e.g.,
+    the path of a file to operate on.
+
     Returns a `SandboxResult`; never raises on the *code's* behalf (a crash or
     timeout is data, not an exception). Raises only if the platform can't sandbox.
     """
@@ -150,6 +156,7 @@ async def run_in_sandbox(
         "-I",  # isolated mode — see docstring
         "-c",
         code,
+        *(args or []),  # appended after -c => sys.argv[1:] inside the child
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
         # Minimal environment: no inherited secrets. PATH only so the

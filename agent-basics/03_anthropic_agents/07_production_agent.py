@@ -59,7 +59,9 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import functools
 import hashlib
+import importlib.util
 import inspect
 import json
 import logging
@@ -320,8 +322,9 @@ SYSTEM_PROMPT_BASE = (
 # See the TRUST MODEL note in the read_skill branch of _dispatch_meta.
 
 # A code-execution substrate for run_skill_script, injected so this file stays
-# standalone (it can't import the digit-named 08 module). Shape: (path, args) ->
-# output. Pass 08_sandboxed_execution.run_in_sandbox in production.
+# standalone. Shape: (script_path, args) -> output. 08's run_in_sandbox takes a
+# code *string* (not a path+args), so it's bridged in via the `sandboxed_executor`
+# adapter at the bottom of this file — which the demo wires in.
 ScriptExecutor = Callable[[str, list[str]], Awaitable[str]]
 
 
@@ -420,7 +423,8 @@ async def run_skill_script(
     Narrower than a general code-exec tool: one bundled script with args, no
     composing scripts or passing data between them. It captures the
     out-of-context property without a full bash substrate. The executor is
-    injected — pass 08's resource-limited sandbox for untrusted code.
+    injected — use `sandboxed_executor`, which runs the script in 08's
+    resource-limited sandbox, for untrusted code.
     """
     script_path = skill.resolve(rel)  # traversal-guarded; raises if it escapes
     return await executor(str(script_path), args)
@@ -662,7 +666,7 @@ class Agent:
         self.skills: dict[str, Skill] = {s.name: s for s in (skills or [])}
         # Injected code-execution substrate for run_skill_script (out-of-context
         # script execution). None => the run_skill_script tool is not exposed.
-        # In production, pass 08_sandboxed_execution.run_in_sandbox.
+        # Pass `sandboxed_executor` (below) to run scripts in 08's sandbox.
         self._script_executor = script_executor
         # Base permission allowlist: only these domain tools may run. Default =
         # all registered tools. A destructive tool not on the list can never
@@ -1412,27 +1416,48 @@ async def send_email(to: str, subject: str, body: str) -> dict:
 TOOLS = [search_web, convert_temperature, send_email]
 
 
-async def _demo_script_executor(script_path: str, args: list[str]) -> str:
-    """DEMO executor for run_skill_script — shells out and captures output.
+@functools.cache
+def _load_sandbox() -> Any:
+    """Import 08_sandboxed_execution by file path (cached).
 
-    Deliberately minimal and NOT isolated: it exists to show the out-of-context
-    wiring (the script's source never enters the model's context — only this
-    stdout does). In production, inject 08_sandboxed_execution.run_in_sandbox,
-    which adds resource limits, a timeout, and process-group kill — same
-    `(path, args) -> output` seam.
+    07 can't `import 08_sandboxed_execution` — the leading digit isn't a valid
+    module name — so we load the sibling file directly. We register it in
+    sys.modules BEFORE exec_module: 08 defines a @dataclass, and dataclass
+    processing resolves `cls.__module__` via sys.modules, which 400s on None if
+    the module isn't registered yet.
     """
-    proc = await asyncio.create_subprocess_exec(
-        sys.executable,
-        script_path,
-        *args,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    out, err = await asyncio.wait_for(proc.communicate(), timeout=10)
-    text = out.decode(errors="replace")
-    if err:
-        text += "\n[stderr] " + err.decode(errors="replace")
-    return text
+    path = Path(__file__).parent / "08_sandboxed_execution.py"
+    spec = importlib.util.spec_from_file_location("sandboxed_execution", path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"cannot load the sandbox module from {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+async def sandboxed_executor(script_path: str, args: list[str]) -> str:
+    """ScriptExecutor that runs a skill's bundled script in 08's sandbox.
+
+    The adapter that makes 07's loading channel genuinely sandboxed. It bridges
+    07's `(script_path, args) -> str` seam onto 08's
+    `run_in_sandbox(code, *, args=...) -> SandboxResult`:
+
+      - reads the script's source into the RUNTIME (never the model's context,
+        so the out-of-context property of run_skill_script still holds), then
+      - runs it under 08's resource limits + wall-clock timeout + process-group
+        kill, with `args` arriving as the script's sys.argv[1:], and
+      - returns only the captured output (plus a stderr/timeout note).
+    """
+    sandbox = _load_sandbox()
+    source = Path(script_path).read_text()
+    result = await sandbox.run_in_sandbox(source, args=args)
+    out = result.stdout
+    if result.timed_out:
+        out += "\n[timed out]"
+    elif result.stderr:
+        out += "\n[stderr] " + result.stderr
+    return out
 
 
 def _print_run(label: str, run: AgentRun) -> None:
@@ -1455,9 +1480,11 @@ async def main() -> None:
     _print_run("TOOLS RUN", tools_run)
 
     # 2. LOADING CHANNEL — discover (ambient) -> read_skill -> run_skill_script.
-    # The csv-profile skill runs its bundled profile.py OUT of context: the
-    # model reads the skill's instructions, then the runtime runs the script and
-    # only the printed profile returns — the script's source never enters context.
+    # The csv-profile skill runs its bundled profile.py OUT of context, in 08's
+    # resource-limited sandbox (via sandboxed_executor): the model reads the
+    # skill's instructions, the runtime runs the script under rlimits + timeout,
+    # and only the printed profile returns — the script's source never enters
+    # context. (sandboxed_executor needs a POSIX platform; see 08's threat model.)
     csv_path = Path(tempfile.gettempdir()) / "demo_people.csv"
     csv_path.write_text(
         "name,age,city\nAda,36,London\nGrace,,New York\nLin,29,Taipei\n"
@@ -1465,7 +1492,7 @@ async def main() -> None:
     skill_agent = Agent(
         TOOLS,
         skills=load_skills(SKILLS_DIR).values(),
-        script_executor=_demo_script_executor,
+        script_executor=sandboxed_executor,
     )
     skills_run = await skill_agent.run(
         f"Profile the CSV at {csv_path} using the csv-profile skill, then tell "
