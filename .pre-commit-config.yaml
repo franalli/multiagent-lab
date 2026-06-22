@@ -40,6 +40,11 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.13
     hooks:
+      # code-review/ holds intentionally-flawed review fixtures (planted
+      # bare-excepts, stubbed helpers, etc.) — linting them as production
+      # code is wrong, so ruff skips the dir while detect-secrets still scans it.
       - id: ruff
         args: ["--fix"]
+        exclude: ^code-review/
       - id: ruff-format
+        exclude: ^code-review/
