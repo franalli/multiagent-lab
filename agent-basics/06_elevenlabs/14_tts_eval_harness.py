@@ -111,7 +111,7 @@ async def _safe_score(name, scorer, synth, item) -> ScoreResult | None:
     """
     try:
         return ScoreResult(item.item_id, name, await scorer(synth, item))
-    except Exception:
+    except Exception:  # noqa: BLE001 -- one bad sample must not abort the eval sweep
         return None
 
 

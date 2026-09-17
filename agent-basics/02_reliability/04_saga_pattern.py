@@ -42,7 +42,7 @@ async def run_saga(steps: list[SagaStep]) -> list[Any]:
             try:
                 await step.compensate(result)
                 print(f"  <- compensated {step.name}")
-            except Exception as comp_err:
+            except Exception as comp_err:  # noqa: BLE001 -- a failed compensation must not abort the remaining rollback
                 # Compensation can fail. Log and continue — don't lose the original error.
                 print(f"  !! compensation for {step.name} failed: {comp_err}")
         raise

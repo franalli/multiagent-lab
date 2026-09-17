@@ -43,7 +43,6 @@ from common import (  # sibling import; modal/ is intentionally not a package
     secrets,
 )
 
-
 web_app = FastAPI(title="multiplayer-ai Slack ingress")
 
 

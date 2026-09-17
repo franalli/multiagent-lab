@@ -33,7 +33,6 @@ from common import (  # sibling import; modal/ is intentionally not a package
     secrets,
 )
 
-
 gateway_app = FastAPI(title="multiplayer-ai tool gateway")
 
 

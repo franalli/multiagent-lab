@@ -40,12 +40,10 @@ import json
 import os
 import sys
 import time
+import urllib.error
+import urllib.request
 import uuid
 from typing import Any
-
-import urllib.request
-import urllib.error
-
 
 # Dev-default signing secret. The ingress (modal/ingress_slack.py) reads the
 # same env var and falls back to this same literal, so the harness and the

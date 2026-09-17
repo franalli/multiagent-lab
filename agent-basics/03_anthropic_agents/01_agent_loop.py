@@ -125,7 +125,7 @@ async def run_agent(prompt: str, max_iterations: int = 8) -> str:
                             "content": str(result),
                         }
                     )
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001 -- tool errors go back to the model, never kill the loop
                     tool_results.append(
                         {
                             "type": "tool_result",

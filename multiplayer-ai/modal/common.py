@@ -258,7 +258,7 @@ async def async_convex_post(path: str, payload: dict[str, Any]) -> None:
     payload = {k: v for k, v in payload.items() if v is not None}
     try:
         await _async_client.post(convex_url(path), json=payload)
-    except Exception:  # noqa: BLE001 -- fail-open matches the sync helpers
+    except Exception:  # noqa: BLE001, S110 -- fail-open matches the sync helpers
         pass
 
 

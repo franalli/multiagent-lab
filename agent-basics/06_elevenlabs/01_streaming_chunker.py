@@ -39,11 +39,12 @@ class StreamingChunker:
         text = " ".join(self.buffer)
 
         # Priority order matters: a sentence boundary always beats a clause one.
-        if self._sentence_boundary(text):
-            self._flush()
-        elif len(text) > self.soft_size and text[-1] in CLAUSE_END:
-            self._flush()
-        elif len(text) >= self.max_size:
+        if (
+            self._sentence_boundary(text)
+            or len(text) > self.soft_size
+            and text[-1] in CLAUSE_END
+            or len(text) >= self.max_size
+        ):
             self._flush()
 
     def tick(self):
@@ -74,7 +75,7 @@ class StreamingChunker:
 def test_sentence_boundary():
     chunks = []
     c = StreamingChunker(chunks.append)
-    for tok in "Hello world. How are you?".split():
+    for tok in ["Hello", "world.", "How", "are", "you?"]:
         c.add_token(tok)
     assert chunks == ["Hello world.", "How are you?"], chunks
     print("sentence boundary OK")
@@ -83,7 +84,7 @@ def test_sentence_boundary():
 def test_abbreviation_does_not_flush():
     chunks = []
     c = StreamingChunker(chunks.append)
-    for tok in "Hello Dr. Smith. How are you?".split():
+    for tok in ["Hello", "Dr.", "Smith.", "How", "are", "you?"]:
         c.add_token(tok)
     assert chunks == ["Hello Dr. Smith.", "How are you?"], chunks
     print("abbreviation handling OK")
@@ -129,11 +130,11 @@ async def demo_async():
     c = StreamingChunker(chunks.append, soft_size=30, max_wait_s=0.3)
 
     async def emit():
-        for tok in "Hello, world. How are you doing today?".split():
+        for tok in ["Hello,", "world.", "How", "are", "you", "doing", "today?"]:
             c.add_token(tok)
             await asyncio.sleep(0.02)
         await asyncio.sleep(0.5)  # long pause -> tick() should flush
-        for tok in "Final thought without a period".split():
+        for tok in ["Final", "thought", "without", "a", "period"]:
             c.add_token(tok)
             await asyncio.sleep(0.02)
         c.end()

@@ -126,7 +126,7 @@ async def main():
         limiter.submit(f"chunk-{i}")
 
     # Poll until drained, then stop. (Could wrap queue in an Event for prod.)
-    while limiter.queue:  # noqa: ASYNC110
+    while limiter.queue:
         await asyncio.sleep(0.05)
     await limiter.stop()
 

@@ -28,32 +28,34 @@ async def main():
     )
 
     # Both context managers reap the subprocess on exit — no orphan procs.
-    async with stdio_client(params) as (read, write):
-        async with ClientSession(read, write) as session:
-            # 1. Handshake. The server replies with its capabilities.
-            info = await session.initialize()
-            print(f"connected to: {info.serverInfo.name} v{info.serverInfo.version}")
+    async with (
+        stdio_client(params) as (read, write),
+        ClientSession(read, write) as session,
+    ):
+        # 1. Handshake. The server replies with its capabilities.
+        info = await session.initialize()
+        print(f"connected to: {info.serverInfo.name} v{info.serverInfo.version}")
 
-            # 2. Discover tools. Every MCP server supports list_tools().
-            tools = (await session.list_tools()).tools
-            print(f"\ntools exposed ({len(tools)}):")
-            for t in tools:
-                print(f"  - {t.name}: {t.description}")
+        # 2. Discover tools. Every MCP server supports list_tools().
+        tools = (await session.list_tools()).tools
+        print(f"\ntools exposed ({len(tools)}):")
+        for t in tools:
+            print(f"  - {t.name}: {t.description}")
 
-            # 3. Call tools. `arguments` must match each tool's input_schema
-            # (which FastMCP generated from the server's type hints).
-            for name, args in [
-                ("add", {"a": 3, "b": 4}),
-                ("greet", {"name": "Demo"}),
-                ("greet", {"name": "World", "greeting": "Hi"}),
-            ]:
-                print(f"\ncalling {name}({args})...")
-                result = await session.call_tool(name, arguments=args)
-                # result.content is a list of content blocks; for simple
-                # returns it's a single TextContent.
-                for block in result.content:
-                    if hasattr(block, "text"):
-                        print(f"  -> {block.text}")
+        # 3. Call tools. `arguments` must match each tool's input_schema
+        # (which FastMCP generated from the server's type hints).
+        for name, args in [
+            ("add", {"a": 3, "b": 4}),
+            ("greet", {"name": "Demo"}),
+            ("greet", {"name": "World", "greeting": "Hi"}),
+        ]:
+            print(f"\ncalling {name}({args})...")
+            result = await session.call_tool(name, arguments=args)
+            # result.content is a list of content blocks; for simple
+            # returns it's a single TextContent.
+            for block in result.content:
+                if hasattr(block, "text"):
+                    print(f"  -> {block.text}")
 
     print("\nsession closed; subprocess reaped.")
 

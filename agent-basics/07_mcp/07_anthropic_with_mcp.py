@@ -62,7 +62,7 @@ async def execute_mcp_tool(session, name, args, tool_use_id):
             "content": text,
             "is_error": bool(result.isError),
         }
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 -- tool errors go back to the model, never kill the loop
         return {
             "type": "tool_result",
             "tool_use_id": tool_use_id,
@@ -76,53 +76,50 @@ async def run_agent(prompt, *, max_iterations=8):
     client = AsyncAnthropic()
 
     params = StdioServerParameters(command=sys.executable, args=[SERVER_PATH])
-    async with stdio_client(params) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
+    async with (
+        stdio_client(params) as (read, write),
+        ClientSession(read, write) as session,
+    ):
+        await session.initialize()
 
-            # Catalogue is stable for the session — fetch + convert once.
-            mcp_tools = (await session.list_tools()).tools
-            anthropic_tools = mcp_tools_to_anthropic(mcp_tools)
-            print(
-                f"MCP exposes {len(anthropic_tools)} tools: "
-                f"{[t['name'] for t in anthropic_tools]}\n"
+        # Catalogue is stable for the session — fetch + convert once.
+        mcp_tools = (await session.list_tools()).tools
+        anthropic_tools = mcp_tools_to_anthropic(mcp_tools)
+        print(
+            f"MCP exposes {len(anthropic_tools)} tools: "
+            f"{[t['name'] for t in anthropic_tools]}\n"
+        )
+
+        messages = [{"role": "user", "content": prompt}]
+        for iteration in range(max_iterations):
+            response = await client.messages.create(
+                model=MODEL,
+                max_tokens=1024,
+                tools=anthropic_tools,
+                messages=messages,
             )
+            messages.append({"role": "assistant", "content": response.content})
 
-            messages = [{"role": "user", "content": prompt}]
-            for iteration in range(max_iterations):
-                response = await client.messages.create(
-                    model=MODEL,
-                    max_tokens=1024,
-                    tools=anthropic_tools,
-                    messages=messages,
+            if response.stop_reason == "end_turn":
+                return "\n".join(b.text for b in response.content if b.type == "text")
+
+            if response.stop_reason == "tool_use":
+                blocks = [b for b in response.content if b.type == "tool_use"]
+                # Parallel execution — same pattern as 03_anthropic_agents/02.
+                results = await asyncio.gather(
+                    *(execute_mcp_tool(session, b.name, b.input, b.id) for b in blocks)
                 )
-                messages.append({"role": "assistant", "content": response.content})
-
-                if response.stop_reason == "end_turn":
-                    return "\n".join(
-                        b.text for b in response.content if b.type == "text"
+                for b, r in zip(blocks, results, strict=True):
+                    print(
+                        f"  [iter {iteration}] {b.name}({b.input}) "
+                        f"=> {r['content'][:60]}"
                     )
+                messages.append({"role": "user", "content": results})
+                continue
 
-                if response.stop_reason == "tool_use":
-                    blocks = [b for b in response.content if b.type == "tool_use"]
-                    # Parallel execution — same pattern as 03_anthropic_agents/02.
-                    results = await asyncio.gather(
-                        *(
-                            execute_mcp_tool(session, b.name, b.input, b.id)
-                            for b in blocks
-                        )
-                    )
-                    for b, r in zip(blocks, results, strict=True):
-                        print(
-                            f"  [iter {iteration}] {b.name}({b.input}) "
-                            f"=> {r['content'][:60]}"
-                        )
-                    messages.append({"role": "user", "content": results})
-                    continue
+            raise RuntimeError(f"unexpected stop_reason: {response.stop_reason}")
 
-                raise RuntimeError(f"unexpected stop_reason: {response.stop_reason}")
-
-            raise RuntimeError(f"agent did not finish in {max_iterations} iterations")
+        raise RuntimeError(f"agent did not finish in {max_iterations} iterations")
 
 
 async def main():

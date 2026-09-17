@@ -83,7 +83,7 @@ async def execute_one(block) -> dict[str, Any]:
     try:
         result = await TOOL_IMPLS[block.name](**block.input)
         return {"type": "tool_result", "tool_use_id": block.id, "content": str(result)}
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 -- tool errors go back to the model, never kill the loop
         return {
             "type": "tool_result",
             "tool_use_id": block.id,

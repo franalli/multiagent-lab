@@ -1,13 +1,12 @@
-import os
-import json
 import asyncio
-import requests
-from typing import Optional, List
-from pydantic import BaseModel
-from mistralai import Mistral
-from IPython.display import display, Markdown
+import json
+import os
 
 import nest_asyncio
+import requests
+from IPython.display import Markdown, display
+from mistralai import Mistral
+from pydantic import BaseModel
 
 nest_asyncio.apply()
 
@@ -34,14 +33,14 @@ class SubTask(BaseModel):
     task_id: str
     type: str
     description: str
-    search_query: Optional[str]  # Query for Tavily search for the subtask
+    search_query: str | None  # Query for Tavily search for the subtask
 
 
 class TaskList(BaseModel):
     """Structure for orchestrator output"""
 
     analysis: str
-    subtasks: List[SubTask]
+    subtasks: list[SubTask]
 
 
 def fetch_information(query: str, max_results: int = 3):
@@ -62,7 +61,7 @@ def fetch_information(query: str, max_results: int = 3):
         return {"error": str(e), "results": []}
 
 
-def run_mistral_llm(prompt: str, system_prompt: Optional[str] = None):
+def run_mistral_llm(prompt: str, system_prompt: str | None = None):
     """Run Mistral LLM with given prompts"""
     messages = []
     if system_prompt:
@@ -78,7 +77,7 @@ def run_mistral_llm(prompt: str, system_prompt: Optional[str] = None):
 
 
 def parse_structured_output(
-    prompt: str, response_format: BaseModel, system_prompt: Optional[str] = None
+    prompt: str, response_format: BaseModel, system_prompt: str | None = None
 ):
     """Get structured output from Mistral LLM based on a Pydantic model"""
     messages = []
@@ -107,12 +106,12 @@ async def run_task_async(task: SubTask, original_task: str):
         search_results = fetch_information(task.search_query)
 
         # Format search results into context
-        if "results" in search_results and search_results["results"]:
+        if search_results.get("results"):
             context = "### Relevant Information:\n"
             for result in search_results["results"]:
                 context += f"- {result.get('content', '')}\n"
 
-        if "answer" in search_results and search_results["answer"]:
+        if search_results.get("answer"):
             context += f"\n### Summary: {search_results['answer']}\n"
 
     # Worker prompt with task information and context
@@ -137,7 +136,7 @@ async def run_task_async(task: SubTask, original_task: str):
     )
 
 
-async def execute_tasks_in_parallel(subtasks: List[SubTask], original_task: str):
+async def execute_tasks_in_parallel(subtasks: list[SubTask], original_task: str):
     """Execute all subtasks in parallel"""
     tasks = []
     for subtask in subtasks:

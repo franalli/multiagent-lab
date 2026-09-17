@@ -12,7 +12,7 @@ the breaker, retries amplify load on a struggling upstream.
 """
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 
 
@@ -39,7 +39,7 @@ class CircuitBreaker:
     async def call(self, operation):
         if self.state == CircuitState.OPEN:
             assert self.opened_at is not None
-            if datetime.now() - self.opened_at > timedelta(
+            if datetime.now(UTC) - self.opened_at > timedelta(
                 seconds=self.recovery_timeout
             ):
                 print("  breaker: OPEN -> HALF_OPEN (probing)")
@@ -53,7 +53,7 @@ class CircuitBreaker:
             self.failure_count += 1
             if self.failure_count >= self.failure_threshold:
                 self.state = CircuitState.OPEN
-                self.opened_at = datetime.now()
+                self.opened_at = datetime.now(UTC)
                 print(f"  breaker: tripped OPEN after {self.failure_count} failures")
             raise
 

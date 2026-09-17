@@ -98,7 +98,7 @@ def _build_limits(cpu_seconds: int, memory_mb: int, max_procs: int, max_file_mb:
             # Set (soft, hard) but never raise above the inherited hard limit,
             # or setrlimit raises EPERM for unprivileged processes.
             try:
-                cur_soft, cur_hard = resource.getrlimit(which)
+                _cur_soft, cur_hard = resource.getrlimit(which)
                 hard = cur_hard if cur_hard != resource.RLIM_INFINITY else soft_hard
                 resource.setrlimit(which, (min(soft_hard, hard), hard))
             except (ValueError, OSError):
@@ -207,9 +207,9 @@ def _truncate(text: str, limit: int) -> str:
 # this tool would carry ToolAnnotations(read_only=False, destructive=True) so it
 # requires human approval; here we keep the loop minimal.
 
-import logging  # noqa: E402 — imported here to keep the sandbox section stdlib-only above
+import logging  # imported here to keep the sandbox section stdlib-only above
 
-from anthropic import AsyncAnthropic  # noqa: E402
+from anthropic import AsyncAnthropic
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 log = logging.getLogger(__name__)

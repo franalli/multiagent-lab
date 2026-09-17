@@ -133,11 +133,11 @@ The patterns shown here scale directly to real GPT-2 / GPT-3 / chat LLMs.
 
 import math
 import time
+
 import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+from torch import nn, optim
 from torch.nn import functional as F
+from torch.utils.data import DataLoader, Dataset
 
 # Set random seed for reproducibility (so every run produces the same numbers)
 SEED = 42
@@ -186,7 +186,7 @@ class CharTokenizer:
         # The vocabulary is the sorted set of unique characters in the corpus.
         # sorted() makes the mapping deterministic across runs.
         # chars: List[str], e.g. [' ', '.', 'a', 'b', 'c', ...]
-        chars = sorted(list(set(text)))
+        chars = sorted(set(text))
 
         # stoi = "string to int": maps a character -> its integer id
         # itos = "int to string": maps an integer id -> its character

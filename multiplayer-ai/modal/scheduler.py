@@ -28,6 +28,7 @@
 
 from __future__ import annotations
 
+import json
 import math
 import os
 import re
@@ -45,8 +46,6 @@ from common import (  # sibling import; modal/ is intentionally not a package
     convex_query,
     secrets,
 )
-import json
-
 
 # ---------------------------------------------------------------------------
 # Stage 1 helpers
@@ -182,8 +181,8 @@ def _extract_candidates_via_llm(
     if not api_key:
         return None
     try:
-        from google import genai  # noqa: PLC0415 -- optional dep
-        from google.genai import types as genai_types  # noqa: PLC0415
+        from google import genai  # deferred: optional dep
+        from google.genai import types as genai_types
     except ImportError:
         return None
 

@@ -14,20 +14,21 @@
 #                         Bundled into sandbox_image via add_local_file.
 #   * common.py        -- imported transitively by every Function module.
 
-from common import app  # noqa: F401  -- re-export so `modal serve` discovers the App
-
-# Each import below registers one or more @app.function declarations.
-# We never call these names; the @app.function side-effect is the point.
-from ingress_slack import slack_ingress  # noqa: F401
-from ingress_teams import teams_ingress  # noqa: F401
-from worker import agent_worker  # noqa: F401
-from gateway import tool_gateway  # noqa: F401
-from scheduler import (  # noqa: F401
-    scan_workspace,
-    proactive_scan_all,
-)
+# Every import below registers one or more @app.function declarations (except
+# `app` itself, re-exported so `modal serve` discovers the App). We never call
+# these names; the @app.function side-effect is the point. Order is
+# isort-managed and irrelevant -- registration happens on import either way.
 from analytics import (  # noqa: F401
     compute_workspace_features,
-    predict_workspace_health,
     predict_all_workspaces,
+    predict_workspace_health,
 )
+from common import app  # noqa: F401  -- re-export so `modal serve` discovers the App
+from gateway import tool_gateway  # noqa: F401
+from ingress_slack import slack_ingress  # noqa: F401
+from ingress_teams import teams_ingress  # noqa: F401
+from scheduler import (  # noqa: F401
+    proactive_scan_all,
+    scan_workspace,
+)
+from worker import agent_worker  # noqa: F401

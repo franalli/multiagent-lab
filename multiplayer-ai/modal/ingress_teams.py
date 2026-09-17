@@ -36,7 +36,6 @@ from common import (  # sibling import
     secrets,
 )
 
-
 teams_app = FastAPI(title="multiplayer-ai Teams ingress (mimic)")
 
 

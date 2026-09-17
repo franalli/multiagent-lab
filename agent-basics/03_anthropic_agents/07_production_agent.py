@@ -1359,10 +1359,9 @@ class Agent:
                 target = self.registry.get(block.input.get("name", ""))
                 return bool(target and target.annotations.read_only)
             # Running a skill script executes code — never parallelise it.
-            if block.name == "run_skill_script":
-                return False
-            # Pure reads: list_tools / get_tool_schema / read_skill / read_skill_file.
-            return True
+            # Everything else is a pure read: list_tools / get_tool_schema /
+            # read_skill / read_skill_file.
+            return block.name != "run_skill_script"
 
         if all(is_parallel_safe(b) for b in blocks):
             return await self._cancellable(

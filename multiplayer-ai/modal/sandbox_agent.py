@@ -59,7 +59,7 @@ SKILLS_ROOT = f"{WORKSPACE}/skills"
 # may not be able to import common (its `import modal` can fail outside the
 # Modal container). Fall back to a direct env read in that case.
 try:
-    from common import DEFAULT_GEMINI_MODEL as DEFAULT_MODEL  # noqa: PLC0415
+    from common import DEFAULT_GEMINI_MODEL as DEFAULT_MODEL
 except ImportError:
     DEFAULT_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3-flash-preview")
 
@@ -78,7 +78,7 @@ SKILL_TELEMETRY_PATH = "/tmp/skill_log.jsonl"
 # subsumes ModuleNotFoundError, so that's the precise gate.)
 # WARNING: the fallback literal must stay in sync with common.COST_PER_LLM_CALL_USD.
 try:
-    from common import COST_PER_LLM_CALL_USD  # noqa: PLC0415
+    from common import COST_PER_LLM_CALL_USD
 except ImportError:
     COST_PER_LLM_CALL_USD = 0.002  # keep in sync with common.COST_PER_LLM_CALL_USD
 
@@ -369,7 +369,7 @@ def _agent_tools():
     write_agent_tools_module(os.environ.get("WORKSPACE_ID", "dev"))
     if AGENT_TOOLS_DIR not in sys.path:
         sys.path.insert(0, AGENT_TOOLS_DIR)
-    import agent_tools  # noqa: PLC0415 -- module path only valid after writing
+    import agent_tools  # deferred: module path only valid after writing it
 
     return agent_tools
 

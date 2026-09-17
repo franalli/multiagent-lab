@@ -78,7 +78,7 @@ async def run_agent(question: str, max_iterations: int = 6) -> str:
                 messages.append(
                     ToolMessage(content=str(result), tool_call_id=call["id"])
                 )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 -- tool errors go back to the model, never kill the loop
                 messages.append(
                     ToolMessage(
                         content=f"Error: {e}", tool_call_id=call["id"], status="error"

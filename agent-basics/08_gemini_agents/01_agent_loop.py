@@ -141,7 +141,7 @@ async def run_agent(prompt: str, max_iterations: int = 8) -> str:
             try:
                 result = await TOOL_IMPLS[fc.name](**(fc.args or {}))
                 payload: dict[str, Any] = {"result": result}
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 -- tool errors go back to the model, never kill the loop
                 payload = {"error": str(e)}  # no is_error flag; encode it in the body
             tool_parts.append(
                 types.Part.from_function_response(name=fc.name, response=payload)

@@ -43,10 +43,8 @@ repos:
       # code-review/ holds intentionally-flawed review fixtures (planted
       # bare-excepts, stubbed helpers, etc.) — linting them as production
       # code is wrong, so ruff skips the dir while detect-secrets still scans it.
-      # LLM/00-transformer-examples/ is teaching code kept verbose and explicit
-      # on purpose (shebangs, spelled-out defaults) — same reasoning.
       - id: ruff
         args: ["--fix"]
-        exclude: ^(code-review/|LLM/00-transformer-examples/)
+        exclude: ^code-review/
       - id: ruff-format
-        exclude: ^(code-review/|LLM/00-transformer-examples/)
+        exclude: ^code-review/

@@ -35,12 +35,41 @@ files: `librosa` 0.11.0 → **1.0.0** (major), `convex` 0.7.0 → 0.8.1,
 lockstep at 0.16.8 — bumping one without the other means the hook and the venv
 lint with different rule sets.
 
-Side-effect of that bump: ruff 0.16 flags the teaching examples (shebang without
-+x, spelled-out mutable defaults, nested `list()`). Rather than let a lint bump
-rewrite code this commit only *moved*, `LLM/00-transformer-examples/` was added
-to the existing ruff `exclude` — the same escape hatch `code-review/` already
-uses for code that shouldn't be linted as production. The examples are therefore
-byte-identical to their pre-move versions.
+## 2026-09-17 — ruff 0.16 broadened the default rule set; lint policy now declared
+
+The `ruff` 0.15.13 → 0.16.8 bump surfaced **57 findings in untouched code**. The
+cause is not the code: ruff 0.16 ships a much broader default rule set. Verified
+with `ruff check --isolated` on a 7-line file, which flags `BLE001`, `S110`,
+`B006` and `DTZ005` with no config present at all.
+
+The repo had no `[tool.ruff]` section, so its lint policy was silently whatever
+the installed ruff defaulted to. It is now declared in `pyproject.toml`:
+
+* `exclude = ["code-review", "modal-examples-main"]` — mirrors the pre-commit
+  excludes so a bare `ruff check .` agrees with the hook. `code-review/` holds
+  intentionally-flawed fixtures; `modal-examples-main/` is vendored and carries
+  its own config.
+* `[tool.ruff.lint.isort] known-first-party` lists the `modal/` sibling modules.
+  Without it isort merged `from common import ...` into the third-party block,
+  contradicting the documented "modal/ is intentionally not a package"
+  convention. Declaring them first-party restores the separation.
+
+**Still recommended:** pin `lint.select` explicitly. Until then the next ruff
+bump can change what fails again, the same way this one did.
+
+All 57 were cleared rather than suppressed, except where the behaviour is
+deliberate and now annotated house-style (`# noqa: <rule> -- <reason>`):
+blind excepts in agent loops (tool errors go back to the model, never kill the
+loop), and the documented fail-open in `modal/common.py`. Real fixes included
+timezone-aware `datetime.now(UTC)` in the circuit breaker (re-ran it: the
+CLOSED → OPEN → HALF_OPEN → CLOSED path still works), a mutable default
+argument, and two nested `async with` merges.
+
+One autofix regression worth knowing: `RUF100` deletes "unused" `# noqa`
+comments **including their trailing prose**. Three explanations documenting real
+constraints were lost and restored as plain comments — notably
+`import agent_tools  # deferred: module path only valid after writing it`, which
+encodes convention #5 (agent_tools is materialised at `/tmp` before import).
 
 Dropped: `jupyter` metapackage → `jupyterlab` + `ipykernel`.
 

@@ -140,7 +140,7 @@ async def run_agent(prompt: str, max_iterations: int = 8) -> str:
                 # so parse INSIDE the try so a bad parse becomes a recoverable error.
                 args = json.loads(tc.function.arguments)
                 content = str(await TOOL_IMPLS[tc.function.name](**args))
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 -- tool errors go back to the model, never kill the loop
                 content = f"Error: {e}"
             messages.append({"role": "tool", "tool_call_id": tc.id, "content": content})
 

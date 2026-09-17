@@ -60,3 +60,30 @@ audio = [
   "librosa==1.0.0",
   "torchaudio==2.11.0",
 ]
+
+[tool.ruff]
+# Lint policy is declared here on purpose. With no [tool.ruff] section the rule
+# set is whatever the installed ruff happens to default to, so bumping ruff
+# silently changes what fails -- the 0.15 -> 0.16 bump surfaced 57 findings in
+# untouched code. Mirrors the pre-commit excludes so a bare `ruff check .`
+# agrees with the hook.
+#   code-review/        intentionally-flawed review fixtures
+#   modal-examples-main/ vendored read-only examples (own [tool.ruff] config)
+exclude = ["code-review", "modal-examples-main"]
+
+[tool.ruff.lint.isort]
+# multiplayer-ai/modal/ is deliberately NOT a package: siblings are imported by
+# bare module name (`from common import ...`). Declaring them first-party keeps
+# that block separate from third-party imports, which is what the
+# "sibling import; modal/ is intentionally not a package" comments describe.
+known-first-party = [
+  "common",
+  "agent_tools",
+  "analytics",
+  "gateway",
+  "ingress_slack",
+  "ingress_teams",
+  "sandbox_agent",
+  "scheduler",
+  "worker",
+]

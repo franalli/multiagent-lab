@@ -34,7 +34,6 @@ from common import (  # sibling import
     secrets,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers (POC stubs -- production reads from Convex / Modal logs)
 # ---------------------------------------------------------------------------

@@ -103,13 +103,13 @@ The patterns shown here scale to larger models and more complex tasks.
 
 import math
 import time
+
 import numpy as np
 import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+from torch import nn, optim
 from torch.nn import functional as F
 from torch.text.data.utils import get_tokenizer
+from torch.utils.data import DataLoader, Dataset
 from torchtext.vocab import build_vocab_from_iterator
 
 # Set random seeds for reproducibility
@@ -268,9 +268,7 @@ def create_synthetic_data(num_samples=1000):
     return texts, labels
 
 
-def build_vocabulary(
-    texts, tokenizer, special_tokens=["<pad>", "<bos>", "<eos>", "<unk>"]
-):
+def build_vocabulary(texts, tokenizer, special_tokens=None):
     """
     Build a vocabulary from a list of texts.
 
@@ -285,6 +283,11 @@ def build_vocabulary(
         vocab: Vocab object where vocab[token] -> index (int)
                and vocab.get_itos()[index] -> token (str)
     """
+
+    # Default specials are built inside the function: a mutable default
+    # argument would be shared across every call.
+    if special_tokens is None:
+        special_tokens = ["<pad>", "<bos>", "<eos>", "<unk>"]
 
     # Tokenize all texts and flatten into one list
     def yield_tokens():
