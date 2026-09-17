@@ -1,0 +1,62 @@
+[project]
+name = "multiagent-lab"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+
+# One environment for the whole repo, one .venv at the root, one uv.lock.
+# Runtime/agent stack lives in [dependencies]; the training, tooling and audio
+# stacks are dependency groups so each installs without the others:
+#   uv sync                  -> agent stack only
+#   uv sync --group llm      -> + training stack
+#   uv sync --all-groups     -> everything
+# Remote GPU dependencies (CUDA torch, bitsandbytes, vllm) do NOT belong here;
+# they belong to the Modal container image definition.
+dependencies = [
+  # shared / agent projects, from the old root requirements.txt
+  "fastapi==0.141.1",
+  "pydantic==2.13.5",
+  "modal==1.5.5",
+  "accelerate==1.15.0",
+  "datasets==5.0.1",
+  "evaluate==0.4.6",
+  "convex==0.8.1",
+  "python-dotenv==1.2.3",
+]
+
+[dependency-groups]
+dev = [
+  "pre-commit==4.6.2",
+  "mypy==2.3.1",
+  "ruff==0.16.8",
+  "detect-secrets==1.5.0",
+  "pytest==9.1.1",
+  "jupyterlab==4.6.3",
+  "ipykernel==7.3.0",
+  "jupytext==1.19.5",
+  "nbconvert==7.17.1",
+]
+llm = [
+  "torch==2.14.0",
+  # numpy is held below 2.4 by mistral-common on Python 3.12. Widening
+  # requires-python to >=3.13 is what unlocks numpy 2.5.x.
+  "numpy==2.3.5",
+  "tiktoken==0.14.0",
+  "matplotlib==3.11.2",
+  "tqdm==4.70.1",
+  "pandas==3.0.5",
+  "transformers==5.17.0",
+  "huggingface-hub==1.32.0",
+  "safetensors==0.8.0",
+  "sentencepiece==0.2.2",
+  "mistral-common==1.11.7",
+  "pymupdf==1.28.2",
+  "datasketch==2.0.0",
+  "datatrove[processing]==0.10.0",
+  "mistralai==2.10.1",
+]
+audio = [
+  # ElevenLabs-era leftovers. Delete this group if you're done with that prep.
+  "jiwer==4.0.0",
+  "librosa==1.0.0",
+  "torchaudio==2.11.0",
+]

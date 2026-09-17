@@ -38,13 +38,15 @@ repos:
         args: ["--baseline", ".secrets.baseline"]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.13
+    rev: v0.16.8
     hooks:
       # code-review/ holds intentionally-flawed review fixtures (planted
       # bare-excepts, stubbed helpers, etc.) — linting them as production
       # code is wrong, so ruff skips the dir while detect-secrets still scans it.
+      # LLM/00-transformer-examples/ is teaching code kept verbose and explicit
+      # on purpose (shebangs, spelled-out defaults) — same reasoning.
       - id: ruff
         args: ["--fix"]
-        exclude: ^code-review/
+        exclude: ^(code-review/|LLM/00-transformer-examples/)
       - id: ruff-format
-        exclude: ^code-review/
+        exclude: ^(code-review/|LLM/00-transformer-examples/)
