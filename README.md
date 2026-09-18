@@ -13,8 +13,14 @@ Workspace with three top-level folders:
 | `agent-basics/` | Tutorial track that ramps the prep: `01_async_basics`, `02_reliability`, `03_anthropic_agents`, `04_langchain`, `05_langgraph`, `06_elevenlabs`, `07_mcp`. Self-contained exercises -- run individually. |
 | `modal-examples-main/` | Vendored copy of the [`modal-labs/modal-examples`](https://github.com/modal-labs/modal-examples) repository, **MIT-licensed, © Modal Labs**. Used as a syntax/idiom reference while ramping on Modal Sandboxes, Volumes, scheduled functions, and web endpoints. The original `LICENSE` is preserved inside the folder. |
 
-Top-level `requirements.txt` pins the Python deps used across all three.
-`.venv/` is the shared virtualenv -- activate with `source .venv/bin/activate`.
+Python dependencies are managed by [uv](https://docs.astral.sh/uv/): one
+top-level `pyproject.toml` + `uv.lock` and one shared `.venv/`, covering every
+folder in the lab. `uv sync` for the agent stack, `uv sync --group llm` to add
+the `LLM/` training stack, `uv sync --all-groups` for everything; run commands
+with `uv run <cmd>` from anywhere in the tree. Full details -- group layout,
+the `uv sync` subtractive-by-default trap, and what belongs in a Modal image
+instead -- are in
+[`CLAUDE.md#python-environment-uv`](./CLAUDE.md#python-environment-uv).
 
 ---
 
@@ -260,7 +266,8 @@ multiagent-lab/
 ├── .claude/
 │   └── agents/
 │       └── convention-reviewer.md   project subagent enforcing CLAUDE.md conventions
-├── requirements.txt         shared Python deps
+├── pyproject.toml           shared Python deps (uv; groups: dev / llm / audio)
+├── uv.lock                  resolved lockfile -- committed, travels with pyproject.toml
 ├── agent-basics/            tutorial track (01_async_basics ... 07_mcp), read-only
 ├── modal-examples-main/     Modal Labs reference (MIT, © Modal Labs), read-only
 └── multiplayer-ai/          the POC
@@ -345,8 +352,11 @@ exercise the module's logic without bringing up the full pipeline.
   server. `npx convex dev` is only needed if you're editing `convex/*.ts`
   and want hot-redeploys. If the schema has never been pushed from this
   machine, run `npx convex dev --once` once to deploy it.
-* **Python venv** at repo root with `modal`, `anthropic`, `httpx`, `fastapi`
-  installed -- `source .venv/bin/activate`
+* **Python env** at repo root -- `uv sync` (Python 3.12; installs `modal`,
+  `fastapi`, `convex`, `httpx` and the dev tooling). Prefix commands with
+  `uv run`, or `source .venv/bin/activate`. The Gemini SDK (`google-genai`)
+  is *not* a local dep -- it's installed into the Modal images by
+  `modal/common.py`.
 * **`GEMINI_API_KEY` + `GEMINI_MODEL`** in env (or in
   `multiplayer-ai/.env.local`, where they already live) for non-stubbed
   LLM calls; the POC falls back to a deterministic stub when missing.

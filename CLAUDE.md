@@ -170,12 +170,74 @@ observability). POC scope; the deliverable is the demo.
   `literalUnion` helper). If the frontend needs labels, add a `FOO_LABELS`
   record next to the validator.
 
+## Python environment (uv)
+
+> **Path exception**: paths in this section are **repo-root**, not
+> under `multiplayer-ai/`. One environment serves the whole lab.
+
+`uv` owns the Python side. One `pyproject.toml`, one `uv.lock`, one
+`.venv` -- all at the repo root, shared by `multiplayer-ai/`, `LLM/`
+and `agent-basics/`. There is no `requirements.txt` anywhere and no
+per-folder virtualenv; both were removed 2026-09-17. Python is pinned
+to **3.12** (`requires-python = ">=3.12,<3.13"`) because
+`mistral-common` caps `numpy<2.4` below 3.13 -- that and the rest of
+the dependency log live in `LLM/decisions.md`. There's no
+`.python-version`; uv resolves the interpreter from `requires-python`,
+downloading a managed CPython if the machine has no 3.12.
+
+**Dependency groups.** `[project.dependencies]` is the agent /
+control-plane stack; everything else is a group, so the training stack
+installs without the tooling and vice versa.
+
+| Command | Gets you |
+|---|---|
+| `uv sync` | project deps **+ the `dev` group** (ruff, mypy, pytest, jupyter, pre-commit) -- `dev` is on unless you pass `--no-dev` |
+| `uv sync --group llm` | the above + the training stack (torch, transformers, tiktoken, pandas, ...) for `LLM/` |
+| `uv sync --all-groups` | `dev` + `llm` + `audio`; this is what the working `.venv` currently holds |
+| `uv sync --no-dev` | project deps only -- CI / minimal runtime |
+
+`uv sync` is *exact*: it uninstalls whatever isn't in the selected set.
+A bare `uv sync` in an all-groups `.venv` strips the `llm` and `audio`
+stacks; `--no-dev` additionally strips the tooling. If you're working
+in `LLM/`, keep `--group llm` (or `--all-groups`) on every sync.
+
+**Running things.** `uv run <cmd>` works from anywhere in the tree (uv
+walks up to the root `pyproject.toml`) -- `uv run modal serve
+multiplayer-ai/modal/serve_all.py`, `uv run ruff check .`, `uv run
+pytest`. Same trap as above: `uv run` syncs first using the *default*
+group selection, so a bare `uv run pytest` quietly drops `llm` and
+`audio`. Pass the same `--group` / `--all-groups` flags, or `--no-sync`
+to run against the venv as-is. `source .venv/bin/activate` still works
+and skips all of that -- it just stops guaranteeing the env matches the
+lock.
+
+**Changing dependencies.** `uv add <pkg>`, `uv add --group llm <pkg>`,
+`uv add --group dev <pkg>`; `uv lock --upgrade` to re-resolve
+everything; `uv sync` to apply. Never `pip install` into `.venv` -- it
+isn't recorded in `uv.lock`, so the next sync deletes it without
+comment. `pyproject.toml` and `uv.lock` are both tracked and belong in
+the same commit; `.venv/` is gitignored. `ruff` is pinned in two places
+on purpose: `ruff==0.16.8` in the `dev` group and `rev: v0.16.8` in
+`.pre-commit-config.yaml`. Bump them together, or the hook and your
+shell lint with different rule sets.
+
+**What stays out of this env.** Container dependencies. The Modal
+images declare their own inline --
+`.uv_pip_install("google-genai==0.8.0", "httpx==0.27.2")` on both
+`control_plane_image` and `sandbox_image` in `modal/common.py`.
+`google-genai` is deliberately absent from the root `pyproject.toml`:
+it runs in the container, never on your laptop, so `uv add
+google-genai` is the wrong fix for an import error in sandbox code --
+edit the image. Same for GPU wheels (CUDA torch, bitsandbytes, vllm).
+
 ## How to run end-to-end
 
 See **[`README.md#quickstart-run-the-slack-agent`](./README.md#quickstart-run-the-slack-agent)**
 for the unified `modal serve modal/serve_all.py` flow + harness fire.
 The README is the single source of truth for run instructions; this
-file deliberately doesn't re-state them so they can't drift.
+file deliberately doesn't re-state them so they can't drift. Every
+Python entry point runs through the root uv environment -- prefix it
+with `uv run` (see [Python environment (uv)](#python-environment-uv)).
 
 LLM provider: **Gemini 3 Flash Preview** via `google-genai`. Reads
 `GEMINI_API_KEY` + `GEMINI_MODEL` from env (both live in
@@ -183,9 +245,10 @@ LLM provider: **Gemini 3 Flash Preview** via `google-genai`. Reads
 deterministic stub.
 
 NF2 + NF4 smoke tests live in the README too; one-liners are
-`modal run modal/scheduler.py::smoke_scheduler` (one proactive scan,
-prints which gates fired) and
-`modal run modal/analytics.py::smoke_analytics` (one prediction run).
+`uv run modal run modal/scheduler.py::smoke_scheduler` (one proactive
+scan, prints which gates fired) and
+`uv run modal run modal/analytics.py::smoke_analytics` (one prediction
+run).
 
 ## Convex agent skills
 
