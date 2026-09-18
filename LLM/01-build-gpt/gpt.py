@@ -212,7 +212,9 @@ model = BigramLanguageModel().to(device)
 # step (and the first eval, which recompiles for eval mode) is slow while it traces
 m = torch.compile(model)
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+# fused: on MPS the default AdamW is a Python loop over each parameter tensor;
+# fused does the whole update in GPU kernels
+optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, fused=True)
 
 for iter in range(max_iters):
     if iter % eval_interval == 0:
