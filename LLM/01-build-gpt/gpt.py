@@ -7,8 +7,20 @@ batch_size = 64
 block_size = 256
 max_iters = 5000
 learning_rate = 3e-4
-eval_iters = 500
-device = "cuda" if torch.cuda.is_available() else "cpu"
+eval_interval = 500  # how often to estimate loss
+eval_iters = 200  # batches per split each time we do
+device = (
+    "cuda"
+    if torch.cuda.is_available()
+    else "mps"  # Apple Silicon GPU
+    if torch.backends.mps.is_available()
+    else "cpu"
+)
+# bf16 autocast: matmuls run in bf16, weights stay fp32. Same exponent range as
+# fp32, so unlike fp16 it needs no GradScaler.
+amp_ctx = torch.autocast(
+    device_type=device, dtype=torch.bfloat16, enabled=device != "cpu"
+)
 n_embd = 384
 n_head = 6
 n_layer = 6
@@ -48,15 +60,16 @@ def get_batch(split):
 @torch.no_grad()
 def estimate_loss():
     out = {}
-    m.eval()  # eval phase
+    model.eval()  # eval phase
     for split in ["train", "val"]:
         losses = torch.zeros(eval_iters)
         for k in range(eval_iters):
             X, Y = get_batch(split)
-            _logits, loss = m(X, Y)
+            with amp_ctx:
+                _logits, loss = m(X, Y)
             losses[k] = loss.item()
         out[split] = losses.mean()
-    m.train()  # back to training phase
+    model.train()  # back to training phase
     return out
 
 
@@ -151,7 +164,7 @@ class BigramLanguageModel(nn.Module):
         self.blocks = nn.Sequential(
             *[Block(n_embd, n_head=n_head) for _ in range(n_layer)]
         )
-        self.ln_f = (nn.LayerNorm(n_embd),)
+        self.ln_f = nn.LayerNorm(n_embd)  # final layer norm
         self.lm_head = nn.Linear(n_embd, vocab_size)
 
     def forward(self, idx, targets=None):
@@ -164,6 +177,7 @@ class BigramLanguageModel(nn.Module):
         # x = self.sa_heads(x) # (B, T, C)
         # x = self.ffwd(x) # (B, T, C)
         x = self.blocks(x)  # (B, T, C)
+        x = self.ln_f(x)  # (B, T, C)
         logits = self.lm_head(x)  # (B, T, vocab_size)
 
         if targets is None:
@@ -193,13 +207,15 @@ class BigramLanguageModel(nn.Module):
         return idx
 
 
-model = BigramLanguageModel()
-m = model.to(device)
+model = BigramLanguageModel().to(device)
+# compile fuses the many small per-head ops into fewer GPU kernels; the first
+# step (and the first eval, which recompiles for eval mode) is slow while it traces
+m = torch.compile(model)
 
-optimizer = torch.optim.AdamW(m.parameters(), lr=learning_rate)
+optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
 for iter in range(max_iters):
-    if iter % eval_iters == 0:
+    if iter % eval_interval == 0:
         losses = estimate_loss()
         print(
             f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}"
@@ -209,7 +225,8 @@ for iter in range(max_iters):
     xb, yb = get_batch("train")
 
     # forward pass
-    logits, loss = m(xb, yb)
+    with amp_ctx:
+        logits, loss = m(xb, yb)
 
     # backward pass and optimization step
     optimizer.zero_grad(set_to_none=True)
@@ -220,4 +237,6 @@ for iter in range(max_iters):
 context = torch.zeros(
     (1, 1), dtype=torch.long, device=device
 )  # start with a '0' token, which is a '\n'
-print(decode(m.generate(context, max_new_tokens=500)[0].tolist()))
+# generate from the uncompiled model: T grows 1..block_size, so the compiled
+# one would recompile for each new sequence length
+print(decode(model.generate(context, max_new_tokens=500)[0].tolist()))
