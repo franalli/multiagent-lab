@@ -71,9 +71,7 @@ class TranscriptSync:
                 self.last_idx = nxt
                 return nxt  # path 2
             # In the silent gap right after the cached segment?
-            if t_ms >= seg.end_ms and (
-                nxt >= len(self.segments) or t_ms < self.segments[nxt].start_ms
-            ):
+            if t_ms >= seg.end_ms and (nxt >= len(self.segments) or t_ms < self.segments[nxt].start_ms):
                 return None  # path 3
 
         # Slow path: user scrubbed. Binary search by start_ms.

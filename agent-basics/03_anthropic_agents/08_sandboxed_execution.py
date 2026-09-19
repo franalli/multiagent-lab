@@ -146,9 +146,7 @@ async def run_in_sandbox(
     timeout is data, not an exception). Raises only if the platform can't sandbox.
     """
     if resource is None:
-        raise RuntimeError(
-            "run_in_sandbox requires a POSIX platform (resource module)."
-        )
+        raise RuntimeError("run_in_sandbox requires a POSIX platform (resource module).")
 
     start = time.perf_counter()
     proc = await asyncio.create_subprocess_exec(
@@ -170,9 +168,7 @@ async def run_in_sandbox(
 
     timed_out = False
     try:
-        stdout_b, stderr_b = await asyncio.wait_for(
-            proc.communicate(), timeout=timeout_s
-        )
+        stdout_b, stderr_b = await asyncio.wait_for(proc.communicate(), timeout=timeout_s)
     except TimeoutError:
         timed_out = True
         # Kill the entire process group so spawned children die too. SIGKILL
@@ -218,16 +214,10 @@ MODEL = "claude-haiku-4-5-20251001"
 
 CODE_TOOL = {
     "name": "run_python",
-    "description": (
-        "Execute a short Python 3 program in a resource-limited sandbox and "
-        "return its stdout/stderr. No network or installed third-party packages; "
-        "stdlib only. Print results — return values are not captured."
-    ),
+    "description": ("Execute a short Python 3 program in a resource-limited sandbox and return its stdout/stderr. No network or installed third-party packages; stdlib only. Print results — return values are not captured."),
     "input_schema": {
         "type": "object",
-        "properties": {
-            "code": {"type": "string", "description": "Python source to run"}
-        },
+        "properties": {"code": {"type": "string", "description": "Python source to run"}},
         "required": ["code"],
     },
 }
@@ -240,9 +230,7 @@ async def _execute_code_tool(code: str) -> str:
     success stays terse and a failure carries the diagnostic the model needs.
     """
     result = await run_in_sandbox(code)
-    parts = [
-        f"exit={result.returncode} timed_out={result.timed_out} ({result.duration_seconds:.2f}s)"
-    ]
+    parts = [f"exit={result.returncode} timed_out={result.timed_out} ({result.duration_seconds:.2f}s)"]
     if result.stdout:
         parts.append(f"stdout:\n{result.stdout}")
     if result.stderr:
@@ -258,9 +246,7 @@ async def run_agent(prompt: str, *, max_iterations: int = 6) -> str:
     messages: list[dict] = [{"role": "user", "content": prompt}]
 
     for _ in range(max_iterations):
-        response = await client.messages.create(
-            model=MODEL, max_tokens=1024, tools=[CODE_TOOL], messages=messages
-        )
+        response = await client.messages.create(model=MODEL, max_tokens=1024, tools=[CODE_TOOL], messages=messages)
         messages.append({"role": "assistant", "content": response.content})
 
         if response.stop_reason == "end_turn":
@@ -276,9 +262,7 @@ async def run_agent(prompt: str, *, max_iterations: int = 6) -> str:
                     len(block.input.get("code", "")),
                 )
                 out = await _execute_code_tool(block.input["code"])
-                results.append(
-                    {"type": "tool_result", "tool_use_id": block.id, "content": out}
-                )
+                results.append({"type": "tool_result", "tool_use_id": block.id, "content": out})
             messages.append({"role": "user", "content": results})
             continue
 
@@ -307,10 +291,7 @@ async def main() -> None:
     # First show the sandbox primitives directly, then drive it via the model.
     await _demo_sandbox_directly()
     print("\n--- agent using the sandbox ---")
-    answer = await run_agent(
-        "What is the 25th Fibonacci number? Write and run Python to compute it, "
-        "then state the answer."
-    )
+    answer = await run_agent("What is the 25th Fibonacci number? Write and run Python to compute it, then state the answer.")
     print(f"\nFINAL:\n{answer}")
 
 

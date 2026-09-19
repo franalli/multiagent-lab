@@ -32,9 +32,7 @@ def get_client() -> AsyncAnthropic:
 
 class WeatherInput(BaseModel):
     location: str = Field(..., description="City and country, e.g. 'Amsterdam, NL'")
-    units: Literal["celsius", "fahrenheit"] = Field(
-        "celsius", description="Temperature units"
-    )
+    units: Literal["celsius", "fahrenheit"] = Field("celsius", description="Temperature units")
 
 
 class SearchInput(BaseModel):

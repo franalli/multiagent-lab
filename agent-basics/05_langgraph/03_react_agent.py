@@ -73,9 +73,7 @@ async def main() -> None:
         prompt="You answer briefly. Use tools to look up facts you don't know.",
     )
 
-    question = (
-        "Give me a quick fact sheet on Tokyo: weather, local time, and population."
-    )
+    question = "Give me a quick fact sheet on Tokyo: weather, local time, and population."
     result = await agent.ainvoke({"messages": [("user", question)]})
 
     # The result["messages"] list is the full conversation including

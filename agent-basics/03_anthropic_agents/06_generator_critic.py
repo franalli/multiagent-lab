@@ -41,10 +41,7 @@ async def generate(
     if prev is None:
         user = task
     else:
-        user = (
-            f"Original task: {task}\n\nYour previous attempt:\n{prev}\n\n"
-            f"Critic feedback:\n{feedback}\n\nProduce an improved version."
-        )
+        user = f"Original task: {task}\n\nYour previous attempt:\n{prev}\n\nCritic feedback:\n{feedback}\n\nProduce an improved version."
     response = await client.messages.create(
         model=GENERATOR_MODEL,
         max_tokens=600,
@@ -57,14 +54,8 @@ async def critique(client: AsyncAnthropic, task: str, output: str) -> str:
     response = await client.messages.create(
         model=CRITIC_MODEL,
         max_tokens=300,
-        system=(
-            "You are a strict reviewer. Identify concrete, actionable issues with "
-            "the work. Be specific. If the work is genuinely good enough, reply "
-            "with exactly the single word: APPROVED"
-        ),
-        messages=[
-            {"role": "user", "content": f"Task: {task}\n\nWork to review:\n{output}"}
-        ],
+        system=("You are a strict reviewer. Identify concrete, actionable issues with the work. Be specific. If the work is genuinely good enough, reply with exactly the single word: APPROVED"),
+        messages=[{"role": "user", "content": f"Task: {task}\n\nWork to review:\n{output}"}],
     )
     return response.content[0].text
 
@@ -91,10 +82,7 @@ async def generator_critic_loop(task: str, max_iterations: int = 3) -> str:
 
 
 async def main() -> None:
-    final = await generator_critic_loop(
-        "Write a tweet (max 280 chars) explaining what Python's GIL is "
-        "to an experienced JavaScript developer. Be technically precise."
-    )
+    final = await generator_critic_loop("Write a tweet (max 280 chars) explaining what Python's GIL is to an experienced JavaScript developer. Be technically precise.")
     print(f"\n=== FINAL ({len(final)} chars) ===\n{final}")
 
 

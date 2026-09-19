@@ -19,11 +19,7 @@ mcp = FastMCP("prompts-demo")
 @mcp.prompt()
 def summarise(text: str, max_words: int = 50) -> str:
     """Simple string return -> renders as one user message."""
-    return (
-        f"Please produce a summary of the following text in no more "
-        f"than {max_words} words. Output ONLY the summary, no preamble.\n\n"
-        f"<text>\n{text}\n</text>"
-    )
+    return f"Please produce a summary of the following text in no more than {max_words} words. Output ONLY the summary, no preamble.\n\n<text>\n{text}\n</text>"
 
 
 @mcp.prompt()
@@ -34,23 +30,14 @@ def audit_voice_quality(transcript: str, target_voice_id: str) -> list[base.Mess
     """
     return [
         base.AssistantMessage(
-            "I'm a voice QA specialist for ElevenLabs. I review dubbing "
-            "for clarity, pronunciation, and voice consistency.",
+            "I'm a voice QA specialist for ElevenLabs. I review dubbing for clarity, pronunciation, and voice consistency.",
         ),
-        base.UserMessage(
-            f"Audit the following transcript for voice issues.\n\n"
-            f"Target voice ID: {target_voice_id}\n"
-            f"Transcript:\n{transcript}\n\n"
-            f"Return: (a) pass/fail, (b) per-line issues with timestamps, "
-            f"(c) recommended re-record list."
-        ),
+        base.UserMessage(f"Audit the following transcript for voice issues.\n\nTarget voice ID: {target_voice_id}\nTranscript:\n{transcript}\n\nReturn: (a) pass/fail, (b) per-line issues with timestamps, (c) recommended re-record list."),
     ]
 
 
 @mcp.prompt()
-def write_dubbing_brief(
-    project_name: str, target_language: str, style: str = "natural"
-) -> str:
+def write_dubbing_brief(project_name: str, target_language: str, style: str = "natural") -> str:
     """Embeds service-side conventions into the prompt — consumers don't
     need to learn them separately. This is the "ship your prompt eng" pattern.
     """

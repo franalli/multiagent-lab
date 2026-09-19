@@ -27,9 +27,7 @@ class CircuitOpen(Exception):
 
 
 class CircuitBreaker:
-    def __init__(
-        self, *, failure_threshold: int = 3, recovery_timeout: float = 2.0
-    ) -> None:
+    def __init__(self, *, failure_threshold: int = 3, recovery_timeout: float = 2.0) -> None:
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
         self.failure_count = 0
@@ -39,9 +37,7 @@ class CircuitBreaker:
     async def call(self, operation):
         if self.state == CircuitState.OPEN:
             assert self.opened_at is not None
-            if datetime.now(UTC) - self.opened_at > timedelta(
-                seconds=self.recovery_timeout
-            ):
+            if datetime.now(UTC) - self.opened_at > timedelta(seconds=self.recovery_timeout):
                 print("  breaker: OPEN -> HALF_OPEN (probing)")
                 self.state = CircuitState.HALF_OPEN
             else:

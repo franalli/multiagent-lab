@@ -10,12 +10,8 @@ from pydantic import BaseModel
 
 nest_asyncio.apply()
 
-MISTRAL_API_KEY = os.environ.get(
-    "MISTRAL_API_KEY", "<YOUR MISTRAL API KEY>"
-)  # Get it from https://console.mistral.ai/api-keys
-TAVILY_API_KEY = os.environ.get(
-    "TAVILY_API_KEY", "<YOUR TAVILY API KEY>"
-)  # Get it from https://app.tavily.com/home
+MISTRAL_API_KEY = os.environ.get("MISTRAL_API_KEY", "<YOUR MISTRAL API KEY>")  # Get it from https://console.mistral.ai/api-keys
+TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "<YOUR TAVILY API KEY>")  # Get it from https://app.tavily.com/home
 
 mistral_client = Mistral(api_key=MISTRAL_API_KEY)
 MISTRAL_MODEL = "mistral-small-latest"  # Can be configured based on needs
@@ -69,16 +65,12 @@ def run_mistral_llm(prompt: str, system_prompt: str | None = None):
 
     messages.append({"role": "user", "content": prompt})
 
-    response = mistral_client.chat.complete(
-        model=MISTRAL_MODEL, messages=messages, temperature=0.7, max_tokens=4000
-    )
+    response = mistral_client.chat.complete(model=MISTRAL_MODEL, messages=messages, temperature=0.7, max_tokens=4000)
 
     return response.choices[0].message.content
 
 
-def parse_structured_output(
-    prompt: str, response_format: BaseModel, system_prompt: str | None = None
-):
+def parse_structured_output(prompt: str, response_format: BaseModel, system_prompt: str | None = None):
     """Get structured output from Mistral LLM based on a Pydantic model"""
     messages = []
     if system_prompt:
@@ -192,14 +184,10 @@ async def workflow(user_task: str):
 
     # Step 2: Execute subtasks in parallel
     print("\nExecuting subtasks in parallel...")
-    subtask_results = await execute_tasks_in_parallel(
-        [SubTask(**task) for task in task_breakdown["subtasks"]], user_task
-    )
+    subtask_results = await execute_tasks_in_parallel([SubTask(**task) for task in task_breakdown["subtasks"]], user_task)
 
     # Display worker results
-    for i, (task, result) in enumerate(
-        zip(task_breakdown["subtasks"], subtask_results)
-    ):
+    for i, (task, result) in enumerate(zip(task_breakdown["subtasks"], subtask_results)):
         print(f"\n=== WORKER RESULT ({task['type']}) ===")
         print(f"{result[:200]}...\n")
 

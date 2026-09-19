@@ -39,12 +39,7 @@ class StreamingChunker:
         text = " ".join(self.buffer)
 
         # Priority order matters: a sentence boundary always beats a clause one.
-        if (
-            self._sentence_boundary(text)
-            or len(text) > self.soft_size
-            and text[-1] in CLAUSE_END
-            or len(text) >= self.max_size
-        ):
+        if self._sentence_boundary(text) or len(text) > self.soft_size and text[-1] in CLAUSE_END or len(text) >= self.max_size:
             self._flush()
 
     def tick(self):
@@ -93,10 +88,7 @@ def test_abbreviation_does_not_flush():
 def test_clause_flush_past_soft_size():
     chunks = []
     c = StreamingChunker(chunks.append, soft_size=40)
-    text = (
-        "This is a very long sentence with many words "
-        "exceeding the soft limit, but no period yet."
-    )
+    text = "This is a very long sentence with many words exceeding the soft limit, but no period yet."
     for tok in text.split():
         c.add_token(tok)
     assert any(s.endswith(",") for s in chunks), chunks

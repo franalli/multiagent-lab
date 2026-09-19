@@ -109,9 +109,7 @@ async def handle_teams_activity(
     authorization: str | None = Header(default=None),
 ) -> dict[str, Any]:
     if not verify_teams_auth(authorization):
-        raise HTTPException(
-            status_code=401, detail="missing or invalid Authorization header"
-        )
+        raise HTTPException(status_code=401, detail="missing or invalid Authorization header")
 
     raw_body = await request.body()
     try:
@@ -129,11 +127,7 @@ async def handle_teams_activity(
 
     # tenantId can live on conversation OR under channelData.tenant.id depending
     # on which Bot Framework channel forwarded the activity.
-    tenant_id = (
-        activity.conversation.tenantId
-        or activity.channelData.get("tenant", {}).get("id")
-        or ""
-    )
+    tenant_id = activity.conversation.tenantId or activity.channelData.get("tenant", {}).get("id") or ""
     workspace_id = resolve_workspace_id(tenant_id)
 
     # NORMALISE -- this is the crux. The keys here match exactly what the

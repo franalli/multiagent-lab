@@ -104,9 +104,7 @@ FUNCTIONS = [
     ),
 ]
 
-CONFIG = types.GenerateContentConfig(
-    tools=[types.Tool(function_declarations=FUNCTIONS)]
-)
+CONFIG = types.GenerateContentConfig(tools=[types.Tool(function_declarations=FUNCTIONS)])
 
 TOOL_IMPLS: dict[str, Callable[..., Awaitable[Any]]] = {
     "get_weather": get_weather,
@@ -116,9 +114,7 @@ TOOL_IMPLS: dict[str, Callable[..., Awaitable[Any]]] = {
 
 async def run_agent(prompt: str, max_iterations: int = 8) -> str:
     client = get_client()
-    contents: list[types.Content] = [
-        types.Content(role="user", parts=[types.Part.from_text(text=prompt)])
-    ]
+    contents: list[types.Content] = [types.Content(role="user", parts=[types.Part.from_text(text=prompt)])]
 
     for iteration in range(max_iterations):
         response = await client.aio.models.generate_content(
@@ -143,18 +139,14 @@ async def run_agent(prompt: str, max_iterations: int = 8) -> str:
                 payload: dict[str, Any] = {"result": result}
             except Exception as e:  # noqa: BLE001 -- tool errors go back to the model, never kill the loop
                 payload = {"error": str(e)}  # no is_error flag; encode it in the body
-            tool_parts.append(
-                types.Part.from_function_response(name=fc.name, response=payload)
-            )
+            tool_parts.append(types.Part.from_function_response(name=fc.name, response=payload))
         contents.append(types.Content(role="user", parts=tool_parts))
 
     raise RuntimeError(f"agent did not terminate within {max_iterations} iterations")
 
 
 async def main() -> None:
-    answer = await run_agent(
-        "What's the weather in Tokyo right now, and what local time is it there?"
-    )
+    answer = await run_agent("What's the weather in Tokyo right now, and what local time is it there?")
     print(f"\nFINAL:\n{answer}")
 
 

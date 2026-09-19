@@ -30,9 +30,7 @@ _STORE: dict[str, _Entry] = {}
 
 
 @mcp.tool()
-async def set(
-    key: str, value: str, ttl_seconds: float | None = None, ctx: Context | None = None
-) -> str:
+async def set(key: str, value: str, ttl_seconds: float | None = None, ctx: Context | None = None) -> str:
     """Write a value under `key`. Optional TTL in seconds.
 
     `ctx: Context` is auto-injected by the SDK and NOT exposed in the
@@ -69,11 +67,7 @@ def delete(key: str) -> str:
 @mcp.tool()
 def list_keys(prefix: str = "") -> list[str]:
     """Return live keys (skipping expired), sorted for determinism."""
-    return sorted(
-        key
-        for key, entry in _STORE.items()
-        if not entry.is_expired() and key.startswith(prefix)
-    )
+    return sorted(key for key, entry in _STORE.items() if not entry.is_expired() and key.startswith(prefix))
 
 
 @mcp.tool()

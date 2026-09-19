@@ -61,9 +61,7 @@ def _slack_signature(body: bytes, timestamp: str, secret: str) -> str:
     return f"v0={digest}"
 
 
-def build_slack_message_event(
-    text: str, *, team_id: str, user_id: str, channel: str
-) -> dict[str, Any]:
+def build_slack_message_event(text: str, *, team_id: str, user_id: str, channel: str) -> dict[str, Any]:
     """Construct a Slack Events API "message" envelope.
 
     Matches the shape Slack actually sends so the ingress can be developed
@@ -100,9 +98,7 @@ def build_slack_url_verification() -> dict[str, Any]:
     }
 
 
-def build_teams_activity(
-    text: str, *, tenant_id: str, user_id: str, conversation_id: str
-) -> dict[str, Any]:
+def build_teams_activity(text: str, *, tenant_id: str, user_id: str, conversation_id: str) -> dict[str, Any]:
     """Construct a Bot Framework Activity envelope (Teams' equivalent of a Slack event).
 
     We deliberately ship a *plain dict* rather than building it through the
@@ -129,9 +125,7 @@ def build_teams_activity(
     }
 
 
-def post_json(
-    url: str, payload: dict[str, Any], headers: dict[str, str]
-) -> tuple[int, str]:
+def post_json(url: str, payload: dict[str, Any], headers: dict[str, str]) -> tuple[int, str]:
     """Tiny stdlib HTTP poster — no httpx dependency to keep the harness portable."""
     raw = json.dumps(payload).encode()
     req = urllib.request.Request(url, data=raw, headers=headers, method="POST")
@@ -185,9 +179,7 @@ def send_teams(args: argparse.Namespace) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Slack/Teams-shaped event harness for multiplayer-ai"
-    )
+    parser = argparse.ArgumentParser(description="Slack/Teams-shaped event harness for multiplayer-ai")
     parser.add_argument("--channel", choices=("slack", "teams"), default="slack")
     parser.add_argument("--url", required=True, help="ingress URL to POST against")
     parser.add_argument("--text", default="hello agent", help="message text body")
@@ -195,13 +187,9 @@ def main() -> int:
     parser.add_argument("--team-id", default="T01DEV0001")
     parser.add_argument("--user-id", default="U01DEMOUSER")
     parser.add_argument("--slack-channel", default="D01DEMODM")
-    parser.add_argument(
-        "--verify", action="store_true", help="send a Slack url_verification challenge"
-    )
+    parser.add_argument("--verify", action="store_true", help="send a Slack url_verification challenge")
     # Teams-specific knobs
-    parser.add_argument(
-        "--teams-tenant-id", default="00000000-0000-0000-0000-000000000dev"
-    )
+    parser.add_argument("--teams-tenant-id", default="00000000-0000-0000-0000-000000000dev")
     parser.add_argument("--teams-conversation-id", default="a:demo-conv")
 
     args = parser.parse_args()

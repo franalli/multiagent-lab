@@ -68,9 +68,7 @@ class VoiceCache:
     def _enforce_budget(self):
         """Drop LRU entries until BOTH the count cap AND the byte cap hold."""
         # `or` in the while: either cap can be violated independently.
-        while self.store and (
-            len(self.store) > self.capacity or self.total_bytes > self.max_bytes
-        ):
+        while self.store and (len(self.store) > self.capacity or self.total_bytes > self.max_bytes):
             # popitem(last=False) pops from the LEFT = oldest = LRU. O(1).
             _, oldest = self.store.popitem(last=False)
             self.total_bytes -= len(oldest.data)

@@ -85,10 +85,7 @@ async def run_agent(prompt, *, max_iterations=8):
         # Catalogue is stable for the session — fetch + convert once.
         mcp_tools = (await session.list_tools()).tools
         anthropic_tools = mcp_tools_to_anthropic(mcp_tools)
-        print(
-            f"MCP exposes {len(anthropic_tools)} tools: "
-            f"{[t['name'] for t in anthropic_tools]}\n"
-        )
+        print(f"MCP exposes {len(anthropic_tools)} tools: {[t['name'] for t in anthropic_tools]}\n")
 
         messages = [{"role": "user", "content": prompt}]
         for iteration in range(max_iterations):
@@ -106,14 +103,9 @@ async def run_agent(prompt, *, max_iterations=8):
             if response.stop_reason == "tool_use":
                 blocks = [b for b in response.content if b.type == "tool_use"]
                 # Parallel execution — same pattern as 03_anthropic_agents/02.
-                results = await asyncio.gather(
-                    *(execute_mcp_tool(session, b.name, b.input, b.id) for b in blocks)
-                )
+                results = await asyncio.gather(*(execute_mcp_tool(session, b.name, b.input, b.id) for b in blocks))
                 for b, r in zip(blocks, results, strict=True):
-                    print(
-                        f"  [iter {iteration}] {b.name}({b.input}) "
-                        f"=> {r['content'][:60]}"
-                    )
+                    print(f"  [iter {iteration}] {b.name}({b.input}) => {r['content'][:60]}")
                 messages.append({"role": "user", "content": results})
                 continue
 
@@ -123,11 +115,7 @@ async def run_agent(prompt, *, max_iterations=8):
 
 
 async def main():
-    answer = await run_agent(
-        "Use the KV store: set 'project' to 'ElevenLabs', set 'role' to "
-        "'Research Engineer', list keys with prefix 'p', then fetch 'project'. "
-        "Summarise what you did and the value you got back."
-    )
+    answer = await run_agent("Use the KV store: set 'project' to 'ElevenLabs', set 'role' to 'Research Engineer', list keys with prefix 'p', then fetch 'project'. Summarise what you did and the value you got back.")
     print(f"\nFINAL:\n{answer}")
 
 

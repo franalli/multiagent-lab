@@ -41,9 +41,7 @@ gateway_app = FastAPI(title="multiplayer-ai tool gateway")
 # ---------------------------------------------------------------------------
 
 
-async def audit(
-    workspace_id: str, action: str, params: dict[str, Any], status: str
-) -> None:
+async def audit(workspace_id: str, action: str, params: dict[str, Any], status: str) -> None:
     """Write one row to Convex audit_log. Keep params compact (truncate)."""
     compact = json.dumps(params)[:512]
     await async_convex_post(
@@ -115,9 +113,7 @@ def credentials_for(workspace_id: str, action: str) -> dict[str, str]:
 # ---------------------------------------------------------------------------
 
 
-async def dispatch(
-    action: str, params: dict[str, Any], creds: dict[str, str]
-) -> dict[str, Any]:
+async def dispatch(action: str, params: dict[str, Any], creds: dict[str, str]) -> dict[str, Any]:
     """Route by action namespace. Each handler is small and side-effecting.
 
     Handlers stub the external call when the relevant creds are absent so
@@ -152,9 +148,7 @@ async def dispatch(
 
 
 @gateway_app.post("/dispatch")
-async def handle_dispatch(
-    request: Request, background: BackgroundTasks
-) -> dict[str, Any]:
+async def handle_dispatch(request: Request, background: BackgroundTasks) -> dict[str, Any]:
     body = await request.json()
     workspace_id = body.get("workspace_id")
     action = body.get("action")

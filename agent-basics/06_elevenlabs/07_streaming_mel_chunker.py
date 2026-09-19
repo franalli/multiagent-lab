@@ -53,13 +53,9 @@ class StreamingMelToAudio:
         if overlap_frames >= chunk_frames:
             raise ValueError("overlap_frames must be < chunk_frames")
         self.vocoder = vocoder
-        self.chunk_frames = (
-            chunk_frames  # how many mel frames vocoder processes at once
-        )
+        self.chunk_frames = chunk_frames  # how many mel frames vocoder processes at once
         self.hop_length = hop_length  # audio samples per mel frame (vocoder-dependent)
-        self.overlap_frames = (
-            overlap_frames  # mel frames retained for next-chunk context
-        )
+        self.overlap_frames = overlap_frames  # mel frames retained for next-chunk context
         # Accumulator of incoming mel frames waiting to be vocoded.
         self.mel_buffer: list[MelFrame] = []
 
@@ -143,9 +139,7 @@ def make_fake_vocoder(hop_length: int) -> Callable[[list[MelFrame]], AudioChunk]
 
 
 def test_buffers_until_chunk_full() -> None:
-    s = StreamingMelToAudio(
-        make_fake_vocoder(256), chunk_frames=32, hop_length=256, overlap_frames=4
-    )
+    s = StreamingMelToAudio(make_fake_vocoder(256), chunk_frames=32, hop_length=256, overlap_frames=4)
     s.push_mels([[0.0] * 80 for _ in range(10)])
     assert s.pop_audio() is None  # not enough yet
     s.push_mels([[0.0] * 80 for _ in range(22)])  # total = 32 -> just enough
@@ -157,9 +151,7 @@ def test_buffers_until_chunk_full() -> None:
 
 
 def test_overlap_retained_for_continuity() -> None:
-    s = StreamingMelToAudio(
-        make_fake_vocoder(10), chunk_frames=8, hop_length=10, overlap_frames=2
-    )
+    s = StreamingMelToAudio(make_fake_vocoder(10), chunk_frames=8, hop_length=10, overlap_frames=2)
     s.push_mels([[0.0]] * 8)
     audio_a = s.pop_audio()
     # Buffer should now contain the 2 retained overlap frames.
@@ -174,9 +166,7 @@ def test_overlap_retained_for_continuity() -> None:
 
 
 def test_flush_emits_remainder() -> None:
-    s = StreamingMelToAudio(
-        make_fake_vocoder(256), chunk_frames=32, hop_length=256, overlap_frames=4
-    )
+    s = StreamingMelToAudio(make_fake_vocoder(256), chunk_frames=32, hop_length=256, overlap_frames=4)
     s.push_mels([[0.0]] * 5)  # below chunk threshold
     assert s.pop_audio() is None
     tail = s.flush()

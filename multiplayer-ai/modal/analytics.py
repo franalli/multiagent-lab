@@ -140,9 +140,7 @@ def classify_user(runs: list[dict[str, Any]], *, days: int = 7) -> dict[str, Any
     return {"classification": cls, "confidence": confidence}
 
 
-def classify_all_users(
-    runs: list[dict[str, Any]], *, days: int = 7
-) -> list[dict[str, Any]]:
+def classify_all_users(runs: list[dict[str, Any]], *, days: int = 7) -> list[dict[str, Any]]:
     """Per-user segmentation list -- the workspace_predictions.user_classifications
     payload. Operates on a pre-fetched batch of runs (no Convex round-trip)
     so the workspace-level prediction does ONE pull, not two."""
@@ -194,9 +192,7 @@ def fetch_accept_rate(workspace_id: str, days: int = 7) -> float:
 # ---------------------------------------------------------------------------
 
 
-def compute_features(
-    workspace_id: str, *, runs: list[dict[str, Any]] | None = None, days: int = 7
-) -> dict[str, Any]:
+def compute_features(workspace_id: str, *, runs: list[dict[str, Any]] | None = None, days: int = 7) -> dict[str, Any]:
     """Compute the workspace feature row. Accepts pre-fetched `runs` so
     the caller can share one HTTP pull across feature compute + user
     classification."""

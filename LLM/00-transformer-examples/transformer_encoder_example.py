@@ -354,9 +354,7 @@ class PositionalEncoding(nn.Module):
         position = torch.arange(max_len).unsqueeze(1)  # Shape: (max_len, 1)
 
         # div_term: torch.Tensor of shape (d_model/2,)  # Exponential terms for different frequencies
-        div_term = torch.exp(
-            torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model)
-        )
+        div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model))
 
         # pe: torch.Tensor of shape (max_len, 1, d_model)  # Positional encoding matrix
         pe = torch.zeros(max_len, 1, d_model)
@@ -560,9 +558,7 @@ class TransformerEncoderModel(nn.Module):
             #   torch.Tensor of shape (batch, src_seq_len) with True for padded positions
             # attention_mask has 1 for real tokens, 0 for padding
             # (attention_mask == 0): torch.Tensor of shape (B, S) with True where padded
-            src_key_padding_mask = (
-                attention_mask == 0
-            )  # Shape: (B, S), True where padded
+            src_key_padding_mask = attention_mask == 0  # Shape: (B, S), True where padded
         else:
             src_key_padding_mask = None
 
@@ -650,9 +646,7 @@ def collate_batch(batch):
     }
 
 
-def train_model(
-    model, train_loader, val_loader, optimizer, criterion, num_epochs=10, patience=3
-):
+def train_model(model, train_loader, val_loader, optimizer, criterion, num_epochs=10, patience=3):
     """
     Train the transformer model.
 
@@ -744,9 +738,7 @@ def train_model(
 
             # Track statistics
             # loss.item(): float, the actual loss value
-            total_train_loss += loss.item() * input_ids.size(
-                0
-            )  # Multiply by batch size
+            total_train_loss += loss.item() * input_ids.size(0)  # Multiply by batch size
 
             # Calculate accuracy
             # torch.max(logits, dim=1): Returns (values, indices) along dim 1
@@ -761,10 +753,7 @@ def train_model(
             if (batch_idx + 1) % 10 == 0:
                 batch_loss = loss.item()
                 batch_acc = (predicted == labels).sum().item() / input_ids.size(0)
-                print(
-                    f"  Epoch {epoch + 1}, Batch {batch_idx + 1}: "
-                    f"Loss = {batch_loss:.4f}, Acc = {batch_acc:.4f}"
-                )
+                print(f"  Epoch {epoch + 1}, Batch {batch_idx + 1}: Loss = {batch_loss:.4f}, Acc = {batch_acc:.4f}")
 
         # Calculate epoch statistics
         epoch_train_loss = total_train_loss / total_train_samples  # float
@@ -781,12 +770,8 @@ def train_model(
         with torch.no_grad():
             for batch in val_loader:
                 # Each batch has same structure as training
-                input_ids = batch["input_ids"].to(
-                    DEVICE
-                )  # Shape: (batch_size, max_seq_len)
-                attention_mask = batch["attention_mask"].to(
-                    DEVICE
-                )  # Shape: (batch_size, max_seq_len)
+                input_ids = batch["input_ids"].to(DEVICE)  # Shape: (batch_size, max_seq_len)
+                attention_mask = batch["attention_mask"].to(DEVICE)  # Shape: (batch_size, max_seq_len)
                 labels = batch["labels"].to(DEVICE)  # Shape: (batch_size,)
 
                 # Forward pass
@@ -949,9 +934,7 @@ def interactive_inference(model, tokenizer, vocab, max_seq_len=128):
 
         # Run prediction
         start_time = time.time()
-        predicted_class, confidence = predict(
-            model, text, tokenizer, vocab, max_seq_len, DEVICE
-        )
+        predicted_class, confidence = predict(model, text, tokenizer, vocab, max_seq_len, DEVICE)
         inference_time = time.time() - start_time
 
         # Display results
@@ -1137,9 +1120,7 @@ def main():
     print("\nStep 5: Running live inference...")
 
     # Run interactive inference
-    interactive_inference(
-        model=model, tokenizer=tokenizer, vocab=vocab, max_seq_len=128
-    )
+    interactive_inference(model=model, tokenizer=tokenizer, vocab=vocab, max_seq_len=128)
 
     print("\nDone!")
 

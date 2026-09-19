@@ -129,9 +129,7 @@ def get_workspace_volume(workspace_id: str) -> modal.Volume:
 # with `modal secret create multiplayer-ai-secrets ...`. The dev-default
 # signing secret here matches harness/send_event.py so the harness and the
 # ingress can verify each other out of the box without any setup step.
-DEV_SLACK_SIGNING_SECRET = (
-    "dev-signing-secret-do-not-use-in-prod"  # pragma: allowlist secret
-)
+DEV_SLACK_SIGNING_SECRET = "dev-signing-secret-do-not-use-in-prod"  # pragma: allowlist secret
 
 # Secret name — create with:
 #   modal secret create multiplayer-ai-secrets \
@@ -168,14 +166,10 @@ def secrets() -> list[modal.Secret]:
     clone runs without provisioning -- production-path swap is one line.
     """
     payload: dict[str, str] = {
-        "SLACK_SIGNING_SECRET": os.environ.get(
-            "SLACK_SIGNING_SECRET", DEV_SLACK_SIGNING_SECRET
-        ),
+        "SLACK_SIGNING_SECRET": os.environ.get("SLACK_SIGNING_SECRET", DEV_SLACK_SIGNING_SECRET),
         "GEMINI_API_KEY": os.environ.get("GEMINI_API_KEY", ""),
         "GEMINI_MODEL": os.environ.get("GEMINI_MODEL", DEFAULT_GEMINI_MODEL),
-        "CONVEX_SITE_URL": os.environ.get(
-            "CONVEX_SITE_URL", "https://exuberant-albatross-781.convex.site"
-        ),
+        "CONVEX_SITE_URL": os.environ.get("CONVEX_SITE_URL", "https://exuberant-albatross-781.convex.site"),
     }
     gateway_url = os.environ.get("TOOL_GATEWAY_URL", "")
     if gateway_url:
@@ -195,9 +189,7 @@ def secrets() -> list[modal.Secret]:
 
 def convex_url(path: str) -> str:
     """Build a fully-qualified URL against the deployed Convex site."""
-    base = os.environ.get(
-        "CONVEX_SITE_URL", "https://exuberant-albatross-781.convex.site"
-    )
+    base = os.environ.get("CONVEX_SITE_URL", "https://exuberant-albatross-781.convex.site")
     return f"{base.rstrip('/')}{path}"
 
 

@@ -143,9 +143,7 @@ async def run_agent(prompt: str, max_iterations: int = 8) -> str:
 
 
 async def main() -> None:
-    answer = await run_agent(
-        "What's the weather in Tokyo right now, and what local time is it there?"
-    )
+    answer = await run_agent("What's the weather in Tokyo right now, and what local time is it there?")
     print(f"\nFINAL:\n{answer}")
 
 

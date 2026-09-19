@@ -110,3 +110,5 @@ multiplayer-ai/ai/
 multiplayer-ai/skills/
 multiplayer-ai/skills-lock.json
 LLM/01-build-gpt/input.txt
+LLM/02-gpt2-reproduce/input.txt
+**edu_fineweb10B

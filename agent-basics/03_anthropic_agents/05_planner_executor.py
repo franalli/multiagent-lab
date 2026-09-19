@@ -45,11 +45,7 @@ async def plan(client: AsyncAnthropic, task: str) -> list[dict]:
     response = await client.messages.create(
         model=PLANNER_MODEL,
         max_tokens=800,
-        system=(
-            "You are a planner. Decompose the user's task into 3-5 sequential steps. "
-            'Output ONLY a JSON array. Each item: {"id": int, "description": "..."}. '
-            "No prose outside the JSON."
-        ),
+        system=('You are a planner. Decompose the user\'s task into 3-5 sequential steps. Output ONLY a JSON array. Each item: {"id": int, "description": "..."}. No prose outside the JSON.'),
         messages=[{"role": "user", "content": task}],
     )
     return extract_json_array(response.content[0].text)
@@ -61,12 +57,7 @@ async def execute_step(
     prior_results: list[dict],
 ) -> str:
     context = "\n".join(f"- step {r['id']}: {r['summary']}" for r in prior_results)
-    prompt = (
-        f"You are executing one step of a larger plan.\n"
-        f"Current step ({step['id']}): {step['description']}\n\n"
-        f"Prior results so far:\n{context if context else '(none)'}\n\n"
-        f"Produce a 1-2 sentence result for THIS step only."
-    )
+    prompt = f"You are executing one step of a larger plan.\nCurrent step ({step['id']}): {step['description']}\n\nPrior results so far:\n{context if context else '(none)'}\n\nProduce a 1-2 sentence result for THIS step only."
     response = await client.messages.create(
         model=EXECUTOR_MODEL,
         max_tokens=300,
@@ -94,10 +85,7 @@ async def plan_and_execute(task: str) -> str:
 
 
 async def main() -> None:
-    final = await plan_and_execute(
-        "Plan and 'execute' a 30-minute morning routine for someone aiming "
-        "to feel more energetic by 10am. Steps should be concrete actions."
-    )
+    final = await plan_and_execute("Plan and 'execute' a 30-minute morning routine for someone aiming to feel more energetic by 10am. Steps should be concrete actions.")
     print(f"\n=== ALL STEP RESULTS ===\n{final}")
 
 

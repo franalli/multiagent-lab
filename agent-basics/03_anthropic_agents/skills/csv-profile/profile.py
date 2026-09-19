@@ -39,9 +39,7 @@ def profile(path: str) -> None:
         numeric = bool(non_null) and all(_looks_numeric(c) for c in non_null)
         null_rate = (nulls / len(cells) * 100) if cells else 0.0
 
-        line = (
-            f"  {name}: type={'numeric' if numeric else 'text'} nulls={null_rate:.0f}%"
-        )
+        line = f"  {name}: type={'numeric' if numeric else 'text'} nulls={null_rate:.0f}%"
         if numeric and non_null:
             values = [float(c) for c in non_null]
             line += f" min={min(values):g} max={max(values):g} mean={sum(values) / len(values):g}"

@@ -33,10 +33,7 @@ class Call:
 
     @property
     def total_ms(self):
-        return (
-            max((s.end_ms for s in self.spans), default=self.started_at_ms)
-            - self.started_at_ms
-        )
+        return max((s.end_ms for s in self.spans), default=self.started_at_ms) - self.started_at_ms
 
 
 def now_ms():
@@ -86,18 +83,12 @@ class BudgetTracker:
         for s in call.spans:
             budget = self.budgets_ms.get(s.name)
             if budget is not None and s.duration_ms > budget:
-                self.alerts.append(
-                    f"stage '{s.name}' overran: {s.duration_ms:.0f}ms > budget {budget:.0f}ms"
-                )
+                self.alerts.append(f"stage '{s.name}' overran: {s.duration_ms:.0f}ms > budget {budget:.0f}ms")
         if call.total_ms > self.total_budget_ms:
-            self.alerts.append(
-                f"end-to-end overran: {call.total_ms:.0f}ms > {self.total_budget_ms:.0f}ms"
-            )
+            self.alerts.append(f"end-to-end overran: {call.total_ms:.0f}ms > {self.total_budget_ms:.0f}ms")
 
     def stage_p50_p95(self, name):
-        durations = sorted(
-            s.duration_ms for c in self.calls for s in c.spans if s.name == name
-        )
+        durations = sorted(s.duration_ms for c in self.calls for s in c.spans if s.name == name)
         return percentile(durations, 50), percentile(durations, 95), len(durations)
 
 
@@ -136,15 +127,10 @@ async def main():
         p50, p95, _n = tracker.stage_p50_p95(stage)
         budget = tracker.budgets_ms[stage]
         ok = "OK" if p95 <= budget else "OVER"
-        print(
-            f"  {stage:>16}: p50={p50:5.0f}  p95={p95:5.0f}  budget={budget:4.0f}  [{ok}]"
-        )
+        print(f"  {stage:>16}: p50={p50:5.0f}  p95={p95:5.0f}  budget={budget:4.0f}  [{ok}]")
 
     totals = sorted(c.total_ms for c in tracker.calls)
-    print(
-        f"  {'end-to-end':>16}: p50={percentile(totals, 50):5.0f}  "
-        f"p95={percentile(totals, 95):5.0f}  budget={tracker.total_budget_ms:4.0f}"
-    )
+    print(f"  {'end-to-end':>16}: p50={percentile(totals, 50):5.0f}  p95={percentile(totals, 95):5.0f}  budget={tracker.total_budget_ms:4.0f}")
 
     print(f"\nalerts ({len(tracker.alerts)}):")
     for a in tracker.alerts[:5]:

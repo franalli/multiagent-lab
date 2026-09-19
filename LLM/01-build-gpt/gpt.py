@@ -18,9 +18,7 @@ device = (
 )
 # bf16 autocast: matmuls run in bf16, weights stay fp32. Same exponent range as
 # fp32, so unlike fp16 it needs no GradScaler.
-amp_ctx = torch.autocast(
-    device_type=device, dtype=torch.bfloat16, enabled=device != "cpu"
-)
+amp_ctx = torch.autocast(device_type=device, dtype=torch.bfloat16, enabled=device != "cpu")
 n_embd = 384
 n_head = 6
 n_layer = 6
@@ -93,9 +91,7 @@ class Head(nn.Module):
 
         # compute attention score, aka affinities
         wei = q @ k.transpose(-2, -1) * C**-0.5  # (B, T, H) @ (B, H, T) -> (B, T, T)
-        wei = wei.masked_fill(
-            self.tril[:T, :T] == 0, float("-inf")
-        )  # slicing is to broadcast a shorter sequence against the full (block_size, block_size) mask
+        wei = wei.masked_fill(self.tril[:T, :T] == 0, float("-inf"))  # slicing is to broadcast a shorter sequence against the full (block_size, block_size) mask
         wei = F.softmax(wei, dim=-1)
         wei = self.dropout(wei)
 
@@ -106,17 +102,17 @@ class Head(nn.Module):
 class MultiHeadAttention(nn.Module):
     """multiple heads of attention in parallel"""
 
-    def __init__(self, num_heads, head_size):
+    def __init__(self, n_head, head_size):
         super().__init__()
-        self.heads = nn.ModuleList([Head(head_size) for _ in range(num_heads)])
+        self.heads = nn.ModuleList([Head(head_size) for _ in range(n_head)])  # each one learning in parallel and independently
         self.proj = nn.Linear(n_embd, n_embd)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
-        out = torch.cat(
-            [h(x) for h in self.heads], dim=-1
-        )  # concatenate over channel dim
-        out = self.dropout(self.proj(out))
+        # concatenate over channel dim. Each head is (B, T, head_size)
+        out = torch.cat([h(x) for h in self.heads], dim=-1)  # (B, T, E)
+
+        out = self.dropout(self.proj(out))  # (B, T, E)
         return out
 
 
@@ -144,10 +140,10 @@ class Block(nn.Module):
         head_size = n_embd // n_head  # keeps the channel size consistent
         self.sa = MultiHeadAttention(n_head, head_size)
         self.ffwd = FeedForward(n_embd)
-        self.ln1 = nn.LayerNorm(
-            n_embd
-        )  # Layer normalization (mean 0, std 1) of the rows (every example is normalized) across C. Per-token transformation.
-        self.ln2 = nn.LayerNorm(n_embd)  # The layernorm itself has params
+
+        # Layer normalization (mean 0, std 1) of the rows (every example is normalized) across C. Per-token transformation.
+        self.ln1 = nn.LayerNorm(n_embd)
+        self.ln2 = nn.LayerNorm(n_embd)
 
     def forward(self, x):
         x = x + self.sa(self.ln1(x))  # adding a residual path
@@ -161,21 +157,15 @@ class BigramLanguageModel(nn.Module):
         super().__init__()
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
         self.position_embedding_table = nn.Embedding(block_size, n_embd)
-        self.blocks = nn.Sequential(
-            *[Block(n_embd, n_head=n_head) for _ in range(n_layer)]
-        )
+        self.blocks = nn.Sequential(*[Block(n_embd, n_head=n_head) for _ in range(n_layer)])
         self.ln_f = nn.LayerNorm(n_embd)  # final layer norm
         self.lm_head = nn.Linear(n_embd, vocab_size)
 
     def forward(self, idx, targets=None):
         B, T = idx.shape
         tok_emb = self.token_embedding_table(idx)  # (B, T, C)
-        pos_emb = self.position_embedding_table(
-            torch.arange(T, device=device)
-        )  # (T, C)
-        x = tok_emb + pos_emb  # (B, T, C)
-        # x = self.sa_heads(x) # (B, T, C)
-        # x = self.ffwd(x) # (B, T, C)
+        pos_emb = self.position_embedding_table(torch.arange(T, device=device))  # (T, C)
+        x = tok_emb + pos_emb  # (B, T, C) auto broadcasting to the batch size of the pos_emb
         x = self.blocks(x)  # (B, T, C)
         x = self.ln_f(x)  # (B, T, C)
         logits = self.lm_head(x)  # (B, T, vocab_size)
@@ -219,9 +209,7 @@ optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, fused=True)
 for iter in range(max_iters):
     if iter % eval_interval == 0:
         losses = estimate_loss()
-        print(
-            f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}"
-        )
+        print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
 
     # sample batch data
     xb, yb = get_batch("train")
@@ -236,9 +224,8 @@ for iter in range(max_iters):
     optimizer.step()
 
 # generate from the model
-context = torch.zeros(
-    (1, 1), dtype=torch.long, device=device
-)  # start with a '0' token, which is a '\n'
+context = torch.zeros((1, 1), dtype=torch.long, device=device)  # start with a '0' token, which is a '\n'
+
 # generate from the uncompiled model: T grows 1..block_size, so the compiled
 # one would recompile for each new sequence length
 print(decode(model.generate(context, max_new_tokens=500)[0].tolist()))

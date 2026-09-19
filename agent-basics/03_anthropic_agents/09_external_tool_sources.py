@@ -46,9 +46,7 @@ log = logging.getLogger(__name__)
 MODEL = "claude-haiku-4-5-20251001"
 SKILLS_DIR = Path(__file__).parent / "skills"
 # Reuse an MCP server that already exists in this repo (stateful key/value store).
-MCP_SERVER_PATH = str(
-    Path(__file__).parent.parent / "07_mcp" / "04_stateful_kv_server.py"
-)
+MCP_SERVER_PATH = str(Path(__file__).parent.parent / "07_mcp" / "04_stateful_kv_server.py")
 
 
 # ===========================================================================
@@ -106,9 +104,7 @@ def scan_skills(root: Path) -> list[Skill]:
         meta, _body = parse_skill_md(skill_md.read_text())
         name, description = meta.get("name"), meta.get("description")
         if not name or not description:
-            log.warning(
-                "skipping %s: missing name/description in frontmatter", skill_md
-            )
+            log.warning("skipping %s: missing name/description in frontmatter", skill_md)
             continue
         skills.append(Skill(name=name, description=description, path=skill_md.parent))
     return skills
@@ -147,10 +143,7 @@ def read_skill_resource(skill: Skill, relpath: str) -> str:
 SKILL_TOOLS = [
     {
         "name": "load_skill",
-        "description": (
-            "Load the full instructions for a skill by name (from the list in "
-            "your system prompt). Do this when a skill is relevant to the task."
-        ),
+        "description": ("Load the full instructions for a skill by name (from the list in your system prompt). Do this when a skill is relevant to the task."),
         "input_schema": {
             "type": "object",
             "properties": {"name": {"type": "string"}},
@@ -159,10 +152,7 @@ SKILL_TOOLS = [
     },
     {
         "name": "read_skill_resource",
-        "description": (
-            "Read a bundled file (script or reference) from a skill's folder. "
-            "Only do this when you are about to use that file."
-        ),
+        "description": ("Read a bundled file (script or reference) from a skill's folder. Only do this when you are about to use that file."),
         "input_schema": {
             "type": "object",
             "properties": {
@@ -227,9 +217,7 @@ def mcp_tools_to_anthropic(mcp_tools) -> list[dict]:
     ]
 
 
-async def execute_mcp_tool(
-    session: ClientSession, name: str, args: dict, tool_use_id: str
-) -> dict:
+async def execute_mcp_tool(session: ClientSession, name: str, args: dict, tool_use_id: str) -> dict:
     """Forward a tool_use to the MCP session and wrap the reply as a tool_result.
 
     Failures on either side (the subprocess died, the server raised) all land
@@ -268,15 +256,7 @@ def build_system_prompt(skills: list[Skill]) -> str:
     when it calls load_skill. Kept stable/frozen so it remains a cacheable prefix.
     """
     catalog = "\n".join(f"  - {s.name}: {s.description}" for s in skills) or "  (none)"
-    return (
-        "You are an assistant with two sources of capability:\n"
-        "  • TOOLS from an MCP server (use them directly).\n"
-        "  • SKILLS — task playbooks loaded on demand. Available skills:\n"
-        f"{catalog}\n\n"
-        "When a skill is relevant, call load_skill(name) to get its full "
-        "instructions, then follow them. Use read_skill_resource only for a "
-        "bundled file you actually need. Answer the user directly when done."
-    )
+    return f"You are an assistant with two sources of capability:\n  • TOOLS from an MCP server (use them directly).\n  • SKILLS — task playbooks loaded on demand. Available skills:\n{catalog}\n\nWhen a skill is relevant, call load_skill(name) to get its full instructions, then follow them. Use read_skill_resource only for a bundled file you actually need. Answer the user directly when done."
 
 
 async def run_agent(prompt: str, *, max_iterations: int = 10) -> str:
@@ -306,9 +286,7 @@ async def run_agent(prompt: str, *, max_iterations: int = 10) -> str:
         # Fetch the MCP catalogue once; combine with the skill meta-tools.
         mcp_tools = (await session.list_tools()).tools
         anthropic_tools = mcp_tools_to_anthropic(mcp_tools) + SKILL_TOOLS
-        log.info(
-            "MCP exposes %d tools: %s", len(mcp_tools), [t.name for t in mcp_tools]
-        )
+        log.info("MCP exposes %d tools: %s", len(mcp_tools), [t.name for t in mcp_tools])
 
         system = build_system_prompt(skills)
         messages: list[dict] = [{"role": "user", "content": prompt}]
@@ -333,9 +311,7 @@ async def run_agent(prompt: str, *, max_iterations: int = 10) -> str:
                         continue
                     if block.name in SKILL_TOOL_NAMES:
                         # Local source: skills on the filesystem.
-                        text = dispatch_skill_tool(
-                            block.name, block.input, skills_by_name
-                        )
+                        text = dispatch_skill_tool(block.name, block.input, skills_by_name)
                         results.append(
                             {
                                 "type": "tool_result",
@@ -345,11 +321,7 @@ async def run_agent(prompt: str, *, max_iterations: int = 10) -> str:
                         )
                     else:
                         # Remote source: MCP server.
-                        results.append(
-                            await execute_mcp_tool(
-                                session, block.name, block.input, block.id
-                            )
-                        )
+                        results.append(await execute_mcp_tool(session, block.name, block.input, block.id))
                     log.info("  %s(%s)", block.name, json.dumps(block.input)[:80])
                 messages.append({"role": "user", "content": results})
                 continue
@@ -362,11 +334,7 @@ async def run_agent(prompt: str, *, max_iterations: int = 10) -> str:
 async def main() -> None:
     # A task that touches both sources: the skill supplies the *format*, the MCP
     # KV server supplies the *storage*.
-    answer = await run_agent(
-        "Draft a changelog entry for fixing a race condition in the cache "
-        "(PR #1421) using the changelog-entry skill, then save the finished "
-        "entry to the KV store under the key 'changelog'."
-    )
+    answer = await run_agent("Draft a changelog entry for fixing a race condition in the cache (PR #1421) using the changelog-entry skill, then save the finished entry to the KV store under the key 'changelog'.")
     print(f"\nFINAL:\n{answer}")
 
 

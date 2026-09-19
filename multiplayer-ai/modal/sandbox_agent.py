@@ -85,9 +85,7 @@ except ImportError:
 # Tool gateway URL is injected via env by the worker. For local-only test
 # runs (no gateway deployed yet), we stub the post and log the action.
 TOOL_GATEWAY_URL = os.environ.get("TOOL_GATEWAY_URL", "")
-CONVEX_SITE_URL = os.environ.get(
-    "CONVEX_SITE_URL", "https://exuberant-albatross-781.convex.site"
-)
+CONVEX_SITE_URL = os.environ.get("CONVEX_SITE_URL", "https://exuberant-albatross-781.convex.site")
 
 
 # ---------------------------------------------------------------------------
@@ -153,9 +151,7 @@ def convex_post(route: str, payload: dict[str, Any]) -> dict[str, Any]:
             body = resp.read().decode()
         return json.loads(body) if body else {}
     except urllib.error.HTTPError as e:
-        sys.stderr.write(
-            f"convex_post {route} HTTP {e.code}: {e.read().decode()[:200]}\n"
-        )
+        sys.stderr.write(f"convex_post {route} HTTP {e.code}: {e.read().decode()[:200]}\n")
         return {}
     except urllib.error.URLError as e:
         sys.stderr.write(f"convex_post {route} URLError: {e}\n")
@@ -177,27 +173,7 @@ def build_system_prompt(skill_index: dict[str, str], context: dict[str, Any]) ->
     the subprocess executes.
     """
     skill_lines = "\n".join(f"- {p}: {d}" for p, d in sorted(skill_index.items()))
-    return (
-        "You are a multiplayer-AI assistant running inside a Modal sandbox.\n"
-        "You can call tools by emitting Python in a single ```python ...``` block.\n"
-        "Every script you emit is prepended with `from agent_tools import *`\n"
-        "before execution, so the following helpers are available:\n"
-        "  file_read(path)                  -> read a file from the workspace volume\n"
-        "  file_edit(path, content)         -> write a file to the workspace volume\n"
-        "  send_via_gateway(action, params) -> proxied egress through the tool gateway\n"
-        "DO NOT call external HTTP APIs directly -- always go through send_via_gateway.\n"
-        "\n"
-        "If you need a skill, file_read the full SKILL.md by path. Only DESCRIPTIONS\n"
-        "are shown below; full files load on demand.\n"
-        "\n"
-        f"Available skills:\n{skill_lines or '(none yet)'}\n"
-        "\n"
-        f"Workspace: {context.get('workspace_id')}\n"
-        f"User: {context.get('user_id')}\n"
-        f"Channel: {context.get('channel')} ({context.get('channel_type')})\n"
-        "\n"
-        "When you have a final answer with no more tool calls, reply in plain text.\n"
-    )
+    return f"You are a multiplayer-AI assistant running inside a Modal sandbox.\nYou can call tools by emitting Python in a single ```python ...``` block.\nEvery script you emit is prepended with `from agent_tools import *`\nbefore execution, so the following helpers are available:\n  file_read(path)                  -> read a file from the workspace volume\n  file_edit(path, content)         -> write a file to the workspace volume\n  send_via_gateway(action, params) -> proxied egress through the tool gateway\nDO NOT call external HTTP APIs directly -- always go through send_via_gateway.\n\nIf you need a skill, file_read the full SKILL.md by path. Only DESCRIPTIONS\nare shown below; full files load on demand.\n\nAvailable skills:\n{skill_lines or '(none yet)'}\n\nWorkspace: {context.get('workspace_id')}\nUser: {context.get('user_id')}\nChannel: {context.get('channel')} ({context.get('channel_type')})\n\nWhen you have a final answer with no more tool calls, reply in plain text.\n"
 
 
 # ---------------------------------------------------------------------------
@@ -408,9 +384,7 @@ def call_gemini(system: str, messages: list[dict[str, Any]]) -> tuple[str, int]:
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key or _genai is None or _genai_types is None:
         # Deterministic stub: echo the last user message back.
-        last_user = next(
-            (m["content"] for m in reversed(messages) if m["role"] == "user"), ""
-        )
+        last_user = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
         return f"[stub-llm] received: {last_user[:160]}", 0
 
     contents = [
@@ -524,12 +498,7 @@ def execute_with_recovery(
 
         # Failed -- ask Gemini to fix it. The recovery prompt deliberately
         # contains the full stderr so the model can see the actual error.
-        recovery_user = (
-            f"The script you wrote failed.\n"
-            f"STDERR:\n{completed.stderr.strip()}\n"
-            f"STDOUT:\n{completed.stdout.strip()}\n"
-            f"Return ONLY a corrected ```python``` block."
-        )
+        recovery_user = f"The script you wrote failed.\nSTDERR:\n{completed.stderr.strip()}\nSTDOUT:\n{completed.stdout.strip()}\nReturn ONLY a corrected ```python``` block."
         fix_reply, fix_tokens = call_gemini(
             system="You are debugging a failed Python script. Return ONLY a corrected ```python``` block.",
             messages=[{"role": "user", "content": recovery_user}],
@@ -645,9 +614,7 @@ def run_agent_loop(context: dict[str, Any]) -> str:
             },
         )
 
-    messages: list[dict[str, Any]] = [
-        {"role": "user", "content": context.get("message", "")}
-    ]
+    messages: list[dict[str, Any]] = [{"role": "user", "content": context.get("message", "")}]
     final_text = ""
 
     tool_calls_count = 0
@@ -672,9 +639,7 @@ def run_agent_loop(context: dict[str, Any]) -> str:
             {"workspace_id": workspace_id, "thread_id": thread_id, "script": code},
         )
         tool_call_id = tc_resp.get("tool_call_id", "")
-        result = execute_with_recovery(
-            code, tool_call_id=tool_call_id, workspace_id=workspace_id
-        )
+        result = execute_with_recovery(code, tool_call_id=tool_call_id, workspace_id=workspace_id)
         attempts = result.get("attempts", 1)
         if attempts > 1:
             # Each retry triggered a fresh LLM repair call inside execute_with_recovery.
@@ -705,9 +670,7 @@ def run_agent_loop(context: dict[str, Any]) -> str:
     # Post the final answer back through the gateway AND record it in Convex.
     if final_text:
         tools = _agent_tools()
-        gateway_action = (
-            "slack.send" if context.get("channel_origin") == "slack" else "teams.send"
-        )
+        gateway_action = "slack.send" if context.get("channel_origin") == "slack" else "teams.send"
         tools.send_via_gateway(
             gateway_action,
             {"channel": context.get("channel", ""), "text": final_text},

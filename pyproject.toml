@@ -34,6 +34,7 @@ dev = [
   "ipykernel==7.3.0",
   "jupytext==1.19.5",
   "nbconvert==7.17.1",
+  "ipywidgets==8.1.9",
 ]
 llm = [
   "torch==2.14.0",
@@ -70,6 +71,14 @@ audio = [
 #   code-review/        intentionally-flawed review fixtures
 #   modal-examples-main/ vendored read-only examples (own [tool.ruff] config)
 exclude = ["code-review", "modal-examples-main"]
+
+# No line-length limit. E501 is off, and the formatter's wrap width is set high
+# enough that it never reflows on length alone -- ruff has no "unlimited", so
+# 999 stands in for it.
+line-length = 999
+
+[tool.ruff.lint]
+ignore = ["E501"]
 
 [tool.ruff.lint.isort]
 # multiplayer-ai/modal/ is deliberately NOT a package: siblings are imported by

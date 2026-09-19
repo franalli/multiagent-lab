@@ -46,10 +46,7 @@ async def main() -> None:
     agent = create_react_agent(
         model=ChatAnthropic(model=MODEL, max_tokens=512),
         tools=[remember_fact],
-        prompt=(
-            "You are a helpful assistant. When the user shares a fact about themselves, "
-            "call remember_fact. When they ask a question, answer using your memory."
-        ),
+        prompt=("You are a helpful assistant. When the user shares a fact about themselves, call remember_fact. When they ask a question, answer using your memory."),
         checkpointer=checkpointer,
     )
 
@@ -58,11 +55,7 @@ async def main() -> None:
 
     print("--- turn 1: introduce a fact ---")
     r1 = await agent.ainvoke(
-        {
-            "messages": [
-                ("user", "My favourite language is Python and I'm based in Amsterdam.")
-            ]
-        },
+        {"messages": [("user", "My favourite language is Python and I'm based in Amsterdam.")]},
         config=config,
     )
     print(f"AI: {r1['messages'][-1].content}\n")

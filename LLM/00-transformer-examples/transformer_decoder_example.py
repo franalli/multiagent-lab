@@ -461,9 +461,7 @@ class GPTDecoderModel(nn.Module):
         # The learned position table only has `block_size` rows, so the model
         # physically cannot handle a longer sequence. This guard makes that
         # limit explicit (and is why generation crops to block_size below).
-        assert S <= self.block_size, (
-            f"sequence length {S} exceeds block_size {self.block_size}"
-        )
+        assert S <= self.block_size, f"sequence length {S} exceeds block_size {self.block_size}"
 
         # Step 1: token embeddings.  (B, S) -> (B, S, d_model)
         tok_emb = self.token_embedding(input_ids)
@@ -524,9 +522,7 @@ def collate_batch(batch):
     }
 
 
-def train_model(
-    model, train_loader, val_loader, optimizer, criterion, num_epochs=5, patience=3
-):
+def train_model(model, train_loader, val_loader, optimizer, criterion, num_epochs=5, patience=3):
     """
     Train the language model.
 
@@ -600,10 +596,7 @@ def train_model(
             total_train_correct += (predicted == target_ids).sum().item()
 
             if (batch_idx + 1) % 50 == 0:
-                print(
-                    f"  Epoch {epoch + 1}, Batch {batch_idx + 1}: "
-                    f"Loss = {loss.item():.4f}"
-                )
+                print(f"  Epoch {epoch + 1}, Batch {batch_idx + 1}: Loss = {loss.item():.4f}")
 
         epoch_train_loss = total_train_loss / total_train_tokens
         epoch_train_ppl = math.exp(epoch_train_loss)
@@ -641,14 +634,8 @@ def train_model(
 
         epoch_time = time.time() - epoch_start
         print(f"\nEpoch {epoch + 1}/{num_epochs}:")
-        print(
-            f"  Train: Loss = {epoch_train_loss:.4f}, "
-            f"Perplexity = {epoch_train_ppl:.2f}, Acc = {epoch_train_acc:.4f}"
-        )
-        print(
-            f"  Val:   Loss = {epoch_val_loss:.4f}, "
-            f"Perplexity = {epoch_val_ppl:.2f}, Acc = {epoch_val_acc:.4f}"
-        )
+        print(f"  Train: Loss = {epoch_train_loss:.4f}, Perplexity = {epoch_train_ppl:.2f}, Acc = {epoch_train_acc:.4f}")
+        print(f"  Val:   Loss = {epoch_val_loss:.4f}, Perplexity = {epoch_val_ppl:.2f}, Acc = {epoch_val_acc:.4f}")
         print(f"  Time:  {epoch_time:.2f}s")
 
         # Early stopping on validation loss (lower is better for LM).
@@ -798,10 +785,7 @@ def interactive_generation(model, tokenizer, max_new_tokens=200, temperature=0.8
         # crashing (a small but real robustness point for char-level models).
         unknown = [c for c in prompt if c not in tokenizer.stoi]
         if unknown:
-            print(
-                f"  (skipping: these characters aren't in the vocabulary: "
-                f"{sorted(set(unknown))})"
-            )
+            print(f"  (skipping: these characters aren't in the vocabulary: {sorted(set(unknown))})")
             continue
         if not prompt:
             print("Please enter some text.")
@@ -851,9 +835,7 @@ def main():
 
     print(f"  Corpus length: {len(text):,} characters")
     print(f"  Vocabulary size: {tokenizer.vocab_size} unique characters")
-    print(
-        f"  Vocabulary: {''.join(tokenizer.itos[i] for i in range(tokenizer.vocab_size))!r}"
-    )
+    print(f"  Vocabulary: {''.join(tokenizer.itos[i] for i in range(tokenizer.vocab_size))!r}")
 
     # Encode the entire corpus into one long tensor of ids, then split 90/10
     # into train and validation regions (standard practice for LM data).

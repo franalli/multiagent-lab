@@ -186,28 +186,15 @@ def _extract_candidates_via_llm(
     except ImportError:
         return None
 
-    transcript = "\n".join(
-        f"- [{m['user_id']} @ {m.get('channel', '?')}] {m['text']}"
-        for m in messages[:50]
-    )
-    system = (
-        "You mine recurring workflows from a chat transcript. For each\n"
-        "automation candidate, emit ONE JSON object with keys: user_id, channel,\n"
-        "text (a short proposal starting with 'Automate:'), occurrences (int >= 2),\n"
-        "timestamps (list of unix seconds from the transcript).\n"
-        "Return ONLY a JSON array. No prose, no markdown fence."
-    )
+    transcript = "\n".join(f"- [{m['user_id']} @ {m.get('channel', '?')}] {m['text']}" for m in messages[:50])
+    system = "You mine recurring workflows from a chat transcript. For each\nautomation candidate, emit ONE JSON object with keys: user_id, channel,\ntext (a short proposal starting with 'Automate:'), occurrences (int >= 2),\ntimestamps (list of unix seconds from the transcript).\nReturn ONLY a JSON array. No prose, no markdown fence."
     user = f"Transcript:\n{transcript}\n\nReturn a JSON array of candidates."
 
     try:
         client = genai.Client(api_key=api_key)
         resp = client.models.generate_content(
             model=DEFAULT_GEMINI_MODEL,
-            contents=[
-                genai_types.Content(
-                    role="user", parts=[genai_types.Part.from_text(text=user)]
-                )
-            ],
+            contents=[genai_types.Content(role="user", parts=[genai_types.Part.from_text(text=user)])],
             config=genai_types.GenerateContentConfig(
                 system_instruction=system,
                 max_output_tokens=1024,
@@ -263,9 +250,7 @@ def extract_candidate_patterns(messages: list[dict[str, Any]]) -> list[dict[str,
 # ---------------------------------------------------------------------------
 
 
-NAMED_ENTITY_RE = re.compile(
-    r"\b(?:[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*|Q[1-4]|\d+%|[A-Z]{2,})\b"
-)
+NAMED_ENTITY_RE = re.compile(r"\b(?:[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*|Q[1-4]|\d+%|[A-Z]{2,})\b")
 
 
 def count_named_entities(text: str) -> int:
@@ -303,12 +288,7 @@ def score_specificity(candidate: dict[str, Any]) -> dict[str, Any]:
     user_attribution = bool(candidate.get("user_id"))
     timing_regularity = score_timing_regularity(candidate.get("timestamps", []))
 
-    total = (
-        entity_density
-        + recurrence
-        + (1.0 if user_attribution else 0.0)
-        + timing_regularity
-    ) / 4.0
+    total = (entity_density + recurrence + (1.0 if user_attribution else 0.0) + timing_regularity) / 4.0
 
     if timing_regularity > 0.7:
         timing_label = "weekly-regular"
@@ -369,9 +349,7 @@ def gate_frequency_cap(state: dict[str, Any]) -> str | None:
     return "frequency_cap" if used >= cap else None
 
 
-def gate_channel_allow_list(
-    state: dict[str, Any], candidate: dict[str, Any]
-) -> str | None:
+def gate_channel_allow_list(state: dict[str, Any], candidate: dict[str, Any]) -> str | None:
     """4c -- only fire in channels that opted in.
 
     Three cases for the channel allow-list:
@@ -493,9 +471,7 @@ def scan_workspace(workspace_id: str) -> dict[str, Any]:
 
     # Pull the state row -- POC: do a query call. If unavailable, fall back
     # to in-memory defaults so the demo still runs.
-    state = convex_query(
-        "/api/proactive/get_state", {"workspace_id": workspace_id}
-    ) or {
+    state = convex_query("/api/proactive/get_state", {"workspace_id": workspace_id}) or {
         "trust_score": 0.3,
         "suggestions_this_window": 0,
         "suggestions_per_window_max": 5,

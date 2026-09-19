@@ -132,9 +132,7 @@ async def run_agent(prompt: str, max_iterations: int = 8) -> str:
 
         # Answer EVERY tool_call, keyed by tool_call_id, or the next call 400s.
         for tc in message.tool_calls:
-            print(
-                f"  [iter {iteration}] -> {tc.function.name}({tc.function.arguments})"
-            )
+            print(f"  [iter {iteration}] -> {tc.function.name}({tc.function.arguments})")
             try:
                 # arguments is a JSON STRING; a hallucinated call can be malformed,
                 # so parse INSIDE the try so a bad parse becomes a recoverable error.
@@ -148,9 +146,7 @@ async def run_agent(prompt: str, max_iterations: int = 8) -> str:
 
 
 async def main() -> None:
-    answer = await run_agent(
-        "What's the weather in Tokyo right now, and what local time is it there?"
-    )
+    answer = await run_agent("What's the weather in Tokyo right now, and what local time is it there?")
     print(f"\nFINAL:\n{answer}")
 
 

@@ -51,9 +51,7 @@ async def classify_sentiment(state: PipelineState) -> dict:
 async def summarise(state: PipelineState) -> dict:
     """Node 3: build a summary using state populated by earlier nodes."""
     return {
-        "summary": (
-            f"Text ({state['word_count']} words) classified as {state['sentiment']}."
-        ),
+        "summary": (f"Text ({state['word_count']} words) classified as {state['sentiment']}."),
     }
 
 
@@ -76,10 +74,7 @@ async def main() -> None:
     app = build_graph()
 
     initial: PipelineState = {
-        "raw_text": (
-            "LangGraph is a great framework. I love how the state machine model "
-            "makes complex flows tractable."
-        ),
+        "raw_text": ("LangGraph is a great framework. I love how the state machine model makes complex flows tractable."),
         "word_count": 0,
         "sentiment": "",
         "summary": "",

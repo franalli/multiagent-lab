@@ -39,9 +39,7 @@ async def classify(state: TriageState) -> dict:
 
 
 async def handle_bug(state: TriageState) -> dict:
-    return {
-        "response": f"Logged bug report: '{state['query']}'. Ticket #12345 created."
-    }
+    return {"response": f"Logged bug report: '{state['query']}'. Ticket #12345 created."}
 
 
 async def handle_question(state: TriageState) -> dict:

@@ -110,9 +110,7 @@ class Workflow:
         next_state, required_role = target
 
         if role != required_role:
-            raise PermissionError(
-                f"action '{action}' requires {required_role.value}, got {role.value}"
-            )
+            raise PermissionError(f"action '{action}' requires {required_role.value}, got {role.value}")
 
         # Audit FIRST, then mutate. If this two-step were a DB transaction,
         # both would commit together; in-memory, the ordering means a
@@ -145,18 +143,10 @@ class Workflow:
         role = self.user_roles.get(user_id)
         if role == Role.ACTOR:
             # Actors see only their OWN pending assignments.
-            return [
-                s
-                for s in self.segments.values()
-                if s.assignee_id == user_id and s.state == State.PENDING
-            ]
+            return [s for s in self.segments.values() if s.assignee_id == user_id and s.state == State.PENDING]
         if role == Role.EDITOR:
             # Editors see anything ready to edit OR bounced back for re-record.
-            return [
-                s
-                for s in self.segments.values()
-                if s.state in (State.RECORDED, State.REJECTED)
-            ]
+            return [s for s in self.segments.values() if s.state in (State.RECORDED, State.REJECTED)]
         if role == Role.REVIEWER:
             # Reviewers see anything awaiting their approval verdict.
             return [s for s in self.segments.values() if s.state == State.REVIEW]

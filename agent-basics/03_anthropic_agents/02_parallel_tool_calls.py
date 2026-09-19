@@ -127,10 +127,7 @@ async def run_agent(prompt: str, *, parallel: bool) -> tuple[str, float]:
 
 
 async def main() -> None:
-    prompt = (
-        "Give me a quick briefing: weather in Amsterdam, current AAPL stock price, "
-        "and recent news on Mars exploration. Use the tools."
-    )
+    prompt = "Give me a quick briefing: weather in Amsterdam, current AAPL stock price, and recent news on Mars exploration. Use the tools."
 
     print("--- sequential tool execution ---")
     _, seq = await run_agent(prompt, parallel=False)

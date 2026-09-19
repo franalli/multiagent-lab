@@ -76,10 +76,7 @@ def perceptual_hash(samples: list[float], n_buckets: int = 64) -> int:
         return 0
     bucket = max(1, len(samples) // n_buckets)
     # Per-bucket energy (sum of squared amplitudes).
-    energies = [
-        sum(s * s for s in samples[i * bucket : (i + 1) * bucket])
-        for i in range(n_buckets)
-    ]
+    energies = [sum(s * s for s in samples[i * bucket : (i + 1) * bucket]) for i in range(n_buckets)]
     # Bit i = 1 iff bucket i has above-median energy. Median split gives
     # ~32 bits set on random input -> max Hamming distance is meaningful.
     median = sorted(energies)[len(energies) // 2]
@@ -180,11 +177,7 @@ class DatasetGate:
         for clip, phash in survivors:
             dup = self._find_dup(phash, self.corpus + new_hashes)
             if dup:
-                result.rejected.append(
-                    Rejection(
-                        clip.clip_id, RejectReason.DUPLICATE, f"duplicate of {dup}"
-                    )
-                )
+                result.rejected.append(Rejection(clip.clip_id, RejectReason.DUPLICATE, f"duplicate of {dup}"))
                 continue
             new_hashes.append((clip.clip_id, phash))
             result.accepted.append(
@@ -224,16 +217,12 @@ def test_quality_rejections() -> None:
         RawClip("short", "Hi.", 0.1, [0.0] * 100),
         RawClip("long", "x" * 200, 45.0, [0.0] * 1024),
         RawClip("noisy", "Hello world today.", 2.0, make_samples("a"), snr_db=10.0),
-        RawClip(
-            "loud", "Hello world today.", 2.0, make_samples("b"), loudness_lufs=-5.0
-        ),
+        RawClip("loud", "Hello world today.", 2.0, make_samples("b"), loudness_lufs=-5.0),
         RawClip("mismatch", "Hi.", 10.0, make_samples("c")),  # 0.3 cps
     ]
     r = gate.ingest(bad)
     assert len(r.accepted) == 0 and len(r.rejected) == 5
-    print(
-        f"quality rejections OK -> {[(rj.clip_id, rj.reason.value) for rj in r.rejected]}"
-    )
+    print(f"quality rejections OK -> {[(rj.clip_id, rj.reason.value) for rj in r.rejected]}")
 
 
 def test_dedup_within_batch() -> None:
@@ -274,15 +263,9 @@ def main() -> None:
     test_dedup_across_batches()
     test_versioning()
     print("\nScale extensions (for the interview):")
-    print(
-        "  - 1M+ clips: replace brute-force dedup with MinHash+LSH or a vector index."
-    )
-    print(
-        "  - Real phash: chromaprint (survives re-encoding) or a learned audio embedding."
-    )
-    print(
-        "  - Speaker balancing: a second gate that rejects over-represented speakers."
-    )
+    print("  - 1M+ clips: replace brute-force dedup with MinHash+LSH or a vector index.")
+    print("  - Real phash: chromaprint (survives re-encoding) or a learned audio embedding.")
+    print("  - Speaker balancing: a second gate that rejects over-represented speakers.")
 
 
 if __name__ == "__main__":

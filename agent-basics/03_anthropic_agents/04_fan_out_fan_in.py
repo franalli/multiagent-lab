@@ -32,10 +32,7 @@ async def explore_branch(client: AsyncAnthropic, query: str, angle: str) -> str:
     response = await client.messages.create(
         model=MODEL,
         max_tokens=600,
-        system=(
-            f"You are exploring a question from this angle: {angle}. "
-            "Be concise (3-5 bullet points)."
-        ),
+        system=(f"You are exploring a question from this angle: {angle}. Be concise (3-5 bullet points)."),
         messages=[{"role": "user", "content": query}],
     )
     return response.content[0].text
@@ -48,13 +45,7 @@ async def synthesise(
 ) -> str:
     """Reconcile the N branches into a coherent answer."""
     body = "\n\n".join(f"### {angle}\n{output}" for angle, output in branch_outputs)
-    prompt = (
-        f"Original question: {query}\n\n"
-        f"You received {len(branch_outputs)} independent perspectives below. "
-        f"Synthesise them: where do they agree? Where do they diverge? "
-        f"Produce a final answer no longer than 6 bullet points.\n\n"
-        f"{body}"
-    )
+    prompt = f"Original question: {query}\n\nYou received {len(branch_outputs)} independent perspectives below. Synthesise them: where do they agree? Where do they diverge? Produce a final answer no longer than 6 bullet points.\n\n{body}"
     response = await client.messages.create(
         model=MODEL,
         max_tokens=800,
@@ -67,9 +58,7 @@ async def fan_out_research(query: str, angles: list[str]) -> str:
     client = get_client()
 
     # FAN OUT: parallel branch exploration.
-    branch_texts = await asyncio.gather(
-        *(explore_branch(client, query, a) for a in angles)
-    )
+    branch_texts = await asyncio.gather(*(explore_branch(client, query, a) for a in angles))
     for angle, text in zip(angles, branch_texts, strict=True):
         print(f"\n--- branch: {angle} ---\n{text}")
 

@@ -36,9 +36,7 @@ MODEL_ID = "eleven_flash_v2_5"
 
 def get_client() -> AsyncElevenLabs:
     if not os.environ.get("ELEVENLABS_API_KEY"):
-        raise SystemExit(
-            "Set ELEVENLABS_API_KEY to run this demo. Get one at https://elevenlabs.io"
-        )
+        raise SystemExit("Set ELEVENLABS_API_KEY to run this demo. Get one at https://elevenlabs.io")
     return AsyncElevenLabs()
 
 
@@ -97,17 +95,12 @@ async def main() -> None:
     ]
     t0 = time.perf_counter()
     results = await asyncio.gather(
-        *(
-            stream_to_file(client, t, out_dir / f"concurrent_{i}.mp3")
-            for i, t in enumerate(texts)
-        ),
+        *(stream_to_file(client, t, out_dir / f"concurrent_{i}.mp3") for i, t in enumerate(texts)),
     )
     elapsed = time.perf_counter() - t0
     for path, ttfb, size in results:
         print(f"  {path.name}: ttfb={ttfb * 1000:.0f}ms  bytes={size}")
-    print(
-        f"  total wall-clock: {elapsed:.2f}s (vs sum-of-ttfbs which would be sequential)"
-    )
+    print(f"  total wall-clock: {elapsed:.2f}s (vs sum-of-ttfbs which would be sequential)")
 
 
 if __name__ == "__main__":

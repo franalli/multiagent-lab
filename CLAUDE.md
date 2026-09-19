@@ -204,12 +204,12 @@ in `LLM/`, keep `--group llm` (or `--all-groups`) on every sync.
 **Running things.** `uv run <cmd>` works from anywhere in the tree (uv
 walks up to the root `pyproject.toml`) -- `uv run modal serve
 multiplayer-ai/modal/serve_all.py`, `uv run ruff check .`, `uv run
-pytest`. Same trap as above: `uv run` syncs first using the *default*
-group selection, so a bare `uv run pytest` quietly drops `llm` and
-`audio`. Pass the same `--group` / `--all-groups` flags, or `--no-sync`
-to run against the venv as-is. `source .venv/bin/activate` still works
-and skips all of that -- it just stops guaranteeing the env matches the
-lock.
+pytest`. Unlike `uv sync`, `uv run` syncs *inexactly*: it installs
+whatever the default groups are missing and removes nothing (`--exact`
+opts into removal), so a bare `uv run` is safe in an all-groups
+`.venv`. The subtractive trap is `uv sync` alone. `--no-sync` skips the
+sync entirely. `source .venv/bin/activate` still works -- it just stops
+guaranteeing the env matches the lock.
 
 **Changing dependencies.** `uv add <pkg>`, `uv add --group llm <pkg>`,
 `uv add --group dev <pkg>`; `uv lock --upgrade` to re-resolve

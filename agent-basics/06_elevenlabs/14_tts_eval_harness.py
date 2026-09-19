@@ -61,9 +61,7 @@ class CheckpointReport:
 # --- the harness ------------------------------------------------------------
 
 
-async def score_checkpoint(
-    checkpoint_id, test_set, synthesiser, scorers, specs, *, max_concurrent=4
-) -> CheckpointReport:
+async def score_checkpoint(checkpoint_id, test_set, synthesiser, scorers, specs, *, max_concurrent=4) -> CheckpointReport:
     """Run the full eval pass for one checkpoint.
 
     Two-level concurrency:
@@ -81,12 +79,7 @@ async def score_checkpoint(
         async with sem:  # cap GPU-bound work
             synth = await synthesiser(item.text, checkpoint_id)
             # Run all scorers on this one synth concurrently.
-            return await asyncio.gather(
-                *(
-                    _safe_score(name, scorer, synth, item)
-                    for name, scorer in scorers.items()
-                )
-            )
+            return await asyncio.gather(*(_safe_score(name, scorer, synth, item) for name, scorer in scorers.items()))
 
     all_results = await asyncio.gather(*(evaluate(item) for item in test_set))
 
@@ -134,11 +127,7 @@ def compare(candidate, baseline, specs) -> tuple[Verdict, list[str]]:
         # degradation > 0 means the candidate is WORSE on this metric.
         degradation = (b - c) if spec.higher_is_better else (c - b)
         if degradation > spec.regression_threshold:
-            alerts.append(
-                f"{spec.name}: regression of {degradation:.4f} "
-                f"(threshold {spec.regression_threshold:.4f}, "
-                f"baseline {b:.4f} -> candidate {c:.4f})"
-            )
+            alerts.append(f"{spec.name}: regression of {degradation:.4f} (threshold {spec.regression_threshold:.4f}, baseline {b:.4f} -> candidate {c:.4f})")
     return (Verdict.REGRESSION if alerts else Verdict.PASS), alerts
 
 
@@ -191,10 +180,7 @@ async def test_basic_run() -> None:
     report = await score_checkpoint("baseline", TEST_SET, fake_synth, scorers, SPECS)
     # 6 items * 2 metrics = 12 scores.
     assert len(report.per_item) == 12
-    print(
-        f"basic run OK -> wer={report.aggregates['wer']:.4f} "
-        f"secs={report.aggregates['secs']:.4f}"
-    )
+    print(f"basic run OK -> wer={report.aggregates['wer']:.4f} secs={report.aggregates['secs']:.4f}")
 
 
 async def test_passes_when_no_regression() -> None:
@@ -209,9 +195,7 @@ async def test_passes_when_no_regression() -> None:
 async def test_detects_regression() -> None:
     baseline_scorers = {"wer": make_wer_scorer(0), "secs": make_secs_scorer(0)}
     bad_scorers = {"wer": make_wer_scorer(0.05), "secs": make_secs_scorer(0)}
-    baseline = await score_checkpoint(
-        "v1", TEST_SET, fake_synth, baseline_scorers, SPECS
-    )
+    baseline = await score_checkpoint("v1", TEST_SET, fake_synth, baseline_scorers, SPECS)
     candidate = await score_checkpoint("v2", TEST_SET, fake_synth, bad_scorers, SPECS)
     verdict, alerts = compare(candidate, baseline, SPECS)
     assert verdict == Verdict.REGRESSION

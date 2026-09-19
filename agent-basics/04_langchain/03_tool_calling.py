@@ -64,34 +64,24 @@ async def run_agent(question: str, max_iterations: int = 6) -> str:
 
         if not response.tool_calls:
             # No tools requested -> we're done. Extract text.
-            return (
-                response.content
-                if isinstance(response.content, str)
-                else str(response.content)
-            )
+            return response.content if isinstance(response.content, str) else str(response.content)
 
         # Execute every requested tool call.
         for call in response.tool_calls:
             print(f"  [iter {iteration}] -> {call['name']}({call['args']})")
             try:
                 result = await TOOL_REGISTRY[call["name"]].ainvoke(call["args"])
-                messages.append(
-                    ToolMessage(content=str(result), tool_call_id=call["id"])
-                )
+                messages.append(ToolMessage(content=str(result), tool_call_id=call["id"]))
             except Exception as e:  # noqa: BLE001 -- tool errors go back to the model, never kill the loop
                 messages.append(
-                    ToolMessage(
-                        content=f"Error: {e}", tool_call_id=call["id"], status="error"
-                    ),
+                    ToolMessage(content=f"Error: {e}", tool_call_id=call["id"], status="error"),
                 )
 
     raise RuntimeError(f"agent did not terminate within {max_iterations} iterations")
 
 
 async def main() -> None:
-    answer = await run_agent(
-        "What's the weather in Tokyo, and what local time is it there right now?"
-    )
+    answer = await run_agent("What's the weather in Tokyo, and what local time is it there right now?")
     print(f"\nFINAL:\n{answer}")
 
 

@@ -194,10 +194,7 @@ def test_overlap_pushes_with_silence() -> None:
     assert placed[1].start_ms >= placed[0].end_ms
     # First segment was compressed to max rate.
     assert placed[0].speed_factor == MAX_RATE_RATIO
-    print(
-        f"overlap-push OK -> drift={drift}ms, "
-        f"segments={[(p.start_ms, p.end_ms) for p in placed]}"
-    )
+    print(f"overlap-push OK -> drift={drift}ms, segments={[(p.start_ms, p.end_ms) for p in placed]}")
 
 
 def main() -> None:

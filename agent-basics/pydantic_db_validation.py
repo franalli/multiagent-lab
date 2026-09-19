@@ -112,8 +112,7 @@ def insert_employee(conn: sqlite3.Connection, payload: dict) -> Employee:
     emp = Employee.model_validate(payload)  # raises ValidationError on bad data
     row = emp.model_dump(mode="json")  # dates → ISO strings for sqlite
     conn.execute(
-        "INSERT INTO employees (id, name, email, age, department, birth_date, hire_date)"
-        " VALUES (:id, :name, :email, :age, :department, :birth_date, :hire_date)",
+        "INSERT INTO employees (id, name, email, age, department, birth_date, hire_date) VALUES (:id, :name, :email, :age, :department, :birth_date, :hire_date)",
         row,
     )
     conn.commit()
@@ -173,9 +172,7 @@ def main() -> None:
 
     # Simulate a corrupt row that bypassed our writer (manual SQL / old
     # app version). The READ-side validation catches it.
-    conn.execute(
-        "INSERT INTO employees VALUES (99, 'X', 'broken', -5, 'Sales', '2000-01-01', '1990-01-01')"
-    )
+    conn.execute("INSERT INTO employees VALUES (99, 'X', 'broken', -5, 'Sales', '2000-01-01', '1990-01-01')")
     conn.commit()
     try:
         load_employee(conn, 99)

@@ -65,9 +65,7 @@ def get_client() -> AsyncAnthropic:
     return AsyncAnthropic()
 
 
-async def _complete(
-    client: AsyncAnthropic, model: str, system: str, user: str, *, max_tokens: int = 800
-) -> str:
+async def _complete(client: AsyncAnthropic, model: str, system: str, user: str, *, max_tokens: int = 800) -> str:
     """One-shot, non-streaming completion returning the text. The shared
     primitive for every role below (planner/generator/evaluator/subagent).
 
@@ -154,17 +152,10 @@ async def plan(client: AsyncAnthropic, task: str) -> list[Step]:
     raw = await _complete(
         client,
         PLANNER_MODEL,
-        system=(
-            "You are a planner. Decompose the user's task into 3-5 sequential steps. "
-            'Output ONLY a JSON array; each item is {"id": int, "description": str}. '
-            "No prose outside the JSON."
-        ),
+        system=('You are a planner. Decompose the user\'s task into 3-5 sequential steps. Output ONLY a JSON array; each item is {"id": int, "description": str}. No prose outside the JSON.'),
         user=task,
     )
-    return [
-        Step(id=item["id"], description=item["description"])
-        for item in _extract_json(raw, "[", "]")
-    ]
+    return [Step(id=item["id"], description=item["description"]) for item in _extract_json(raw, "[", "]")]
 
 
 class Subagent:
@@ -187,11 +178,7 @@ class Subagent:
         Note the prompt is built from scratch every call — no accumulated history
         leaks in. That isolation is the feature, not a limitation.
         """
-        prompt = (
-            f"Subtask: {subtask}\n\n"
-            f"Relevant context so far (digest, not full history):\n{context_digest or '(none)'}\n\n"
-            "Produce a concise, complete result for THIS subtask only."
-        )
+        prompt = f"Subtask: {subtask}\n\nRelevant context so far (digest, not full history):\n{context_digest or '(none)'}\n\nProduce a concise, complete result for THIS subtask only."
         return await self._invoke(prompt)
 
     async def _invoke(self, prompt: str) -> str:
@@ -205,9 +192,7 @@ class Subagent:
         )
 
 
-async def evaluate_step(
-    client: AsyncAnthropic, task: str, step: Step, output: str
-) -> tuple[bool, str]:
+async def evaluate_step(client: AsyncAnthropic, task: str, step: Step, output: str) -> tuple[bool, str]:
     """EVALUATOR: grade a step's output, returning (approved, feedback).
 
     Returns a STRUCTURED verdict rather than sniffing for the word "APPROVED" in
@@ -221,11 +206,7 @@ async def evaluate_step(
     raw = await _complete(
         client,
         FAST_MODEL,
-        system=(
-            "You are a strict reviewer. Judge whether the output satisfies the step "
-            "in service of the overall task. Output ONLY JSON: "
-            '{"approved": bool, "feedback": "specific, actionable issues or why it passes"}.'
-        ),
+        system=('You are a strict reviewer. Judge whether the output satisfies the step in service of the overall task. Output ONLY JSON: {"approved": bool, "feedback": "specific, actionable issues or why it passes"}.'),
         user=f"Overall task: {task}\n\nStep: {step.description}\n\nOutput to review:\n{output}",
         max_tokens=400,
     )
@@ -237,9 +218,7 @@ async def evaluate_step(
         return False, raw
 
 
-async def generate_step(
-    client: AsyncAnthropic, step: Step, prior_results: list[str]
-) -> str:
+async def generate_step(client: AsyncAnthropic, step: Step, prior_results: list[str]) -> str:
     """GENERATOR: produce a step's output via a subagent, then revise on feedback.
 
     This is where the three roles meet: we delegate the actual work to a subagent
@@ -249,9 +228,7 @@ async def generate_step(
     """
     subagent = Subagent(client)
     # Compact digest of prior steps — this is all the subagent sees of history.
-    digest = (
-        "\n".join(f"- step {i}: {r}" for i, r in enumerate(prior_results)) or "(none)"
-    )
+    digest = "\n".join(f"- step {i}: {r}" for i, r in enumerate(prior_results)) or "(none)"
 
     output = await subagent.run(step.description, digest)
     for attempt in range(MAX_REVISIONS):
@@ -262,8 +239,7 @@ async def generate_step(
         log.info("  step %d revising: %s", step.id, feedback[:80])
         # Re-run with the critique folded into the subtask — still isolated.
         output = await subagent.run(
-            f"{step.description}\n\nYour previous attempt was rejected. Feedback: {feedback}\n"
-            f"Previous attempt:\n{output}",
+            f"{step.description}\n\nYour previous attempt was rejected. Feedback: {feedback}\nPrevious attempt:\n{output}",
             digest,
         )
     # Out of revisions: return the best effort, clearly marked for the synthesiser.
@@ -273,9 +249,7 @@ async def generate_step(
 
 async def synthesize(client: AsyncAnthropic, task: str, steps: list[Step]) -> str:
     """Fold the completed step results into one final answer to the task."""
-    transcript = "\n\n".join(
-        f"[step {s.id}] {s.description}\n{s.result}" for s in steps
-    )
+    transcript = "\n\n".join(f"[step {s.id}] {s.description}\n{s.result}" for s in steps)
     return await _complete(
         client,
         FAST_MODEL,
@@ -296,10 +270,7 @@ class Orchestrator:
     def __init__(self, client: AsyncAnthropic, checkpoint_path: Path | None = None):
         self.client = client
         # Default checkpoint to a temp file so demos don't litter the repo.
-        self.checkpoint_path = (
-            checkpoint_path
-            or Path(tempfile.gettempdir()) / "orchestration_checkpoint.json"
-        )
+        self.checkpoint_path = checkpoint_path or Path(tempfile.gettempdir()) / "orchestration_checkpoint.json"
 
     def _save(self, state: OrchestrationState) -> None:
         """Persist state after each completed step (the crash-safety point).
@@ -375,10 +346,7 @@ async def main() -> None:
     ckpt.unlink(missing_ok=True)
     orch = Orchestrator(client, checkpoint_path=ckpt)
 
-    task = (
-        "Design a simple onboarding email sequence (3 emails) for a developer-tools "
-        "startup: outline each email's goal, subject line, and key message."
-    )
+    task = "Design a simple onboarding email sequence (3 emails) for a developer-tools startup: outline each email's goal, subject line, and key message."
 
     print("=== INITIAL RUN ===")
     answer = await orch.run(task)
