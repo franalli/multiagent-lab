@@ -670,11 +670,31 @@ def run_agent_loop(context: dict[str, Any]) -> str:
     # Post the final answer back through the gateway AND record it in Convex.
     if final_text:
         tools = _agent_tools()
-        gateway_action = "slack.send" if context.get("channel_origin") == "slack" else "teams.send"
-        tools.send_via_gateway(
-            gateway_action,
-            {"channel": context.get("channel", ""), "text": final_text},
-        )
+        if context.get("channel_origin") == "slack":
+            gateway_action = "slack.send"
+            gateway_params = {
+                "channel": context.get("channel", ""),
+                "text": final_text,
+                "thread_ts": context.get("thread_ts"),
+            }
+        else:
+            # Teams replies go to the Activity's serviceUrl, which only the
+            # ingress's `_teams` side-channel carries.
+            teams = context.get("_teams") or {}
+            gateway_action = "teams.send"
+            gateway_params = {
+                "conversation": context.get("channel", ""),
+                "service_url": teams.get("service_url"),
+                "reply_to_id": teams.get("activity_id"),
+                "text": final_text,
+            }
+        # A failed post (gateway 4xx/5xx, upstream down) must not skip the
+        # Convex message write + agent_runs telemetry below; the gateway has
+        # already audited the failure.
+        try:
+            tools.send_via_gateway(gateway_action, gateway_params)
+        except (urllib.error.URLError, TimeoutError) as e:
+            sys.stderr.write(f"[gateway] {gateway_action} failed: {e}\n")
         if thread_id:
             convex_post(
                 "/api/messages/append",

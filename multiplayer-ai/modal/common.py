@@ -177,6 +177,28 @@ def secrets() -> list[modal.Secret]:
     return [modal.Secret.from_dict(payload)]
 
 
+# Integration credentials the gateway spends on outbound calls. Deliberately
+# NOT in secrets(): the worker hands secrets() to the Sandbox, where
+# LLM-generated code runs, and these must never be readable there.
+GATEWAY_CREDENTIAL_KEYS = (
+    "SLACK_BOT_TOKEN",
+    "TEAMS_BOT_APP_ID",
+    "TEAMS_BOT_APP_PASSWORD",
+    "GITHUB_TOKEN",
+)
+
+
+def gateway_secrets() -> list[modal.Secret]:
+    """secrets() plus the integration credentials -- for the tool gateway ONLY.
+
+    Same from_dict-at-deploy-time pattern: export the keys in the shell
+    before `modal serve` / `modal deploy`. Unset keys are omitted, so the
+    gateway's handlers see them as absent and stub the external call.
+    """
+    creds = {k: v for k in GATEWAY_CREDENTIAL_KEYS if (v := os.environ.get(k))}
+    return [*secrets(), modal.Secret.from_dict(creds)]
+
+
 # ---------------------------------------------------------------------------
 # Convex HTTP client
 # ---------------------------------------------------------------------------

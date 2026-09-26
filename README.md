@@ -5,12 +5,14 @@ lives in your team's chat surface, runs in a per-workspace Modal Sandbox,
 and exposes a reactive Convex-backed dashboard for debugging, proactive
 suggestions, skill versioning, and observability.
 
-Workspace with three top-level folders:
+Top-level folders:
 
 | Folder | What it is |
 |---|---|
-| `multiplayer-ai/` | **The POC.** Slack/Teams → Modal ingress → per-workspace Sandbox → Convex reactive state, with four novel features (debug surface, proactive framework, skill version UX, predictive observability). Everything below this line is about this folder. |
-| `agent-basics/` | Tutorial track that ramps the prep: `01_async_basics`, `02_reliability`, `03_anthropic_agents`, `04_langchain`, `05_langgraph`, `06_elevenlabs`, `07_mcp`. Self-contained exercises -- run individually. |
+| `multiplayer-ai/` | **The POC.** Slack/Teams → Modal ingress → per-workspace Sandbox → Convex reactive state, with four novel features (debug surface, proactive framework, skill version UX, predictive observability). Everything below the [`multiplayer-ai`](#multiplayer-ai--the-poc) heading is about this folder. |
+| `LLM/` | Numbered, sequential lab for building language models from scratch: `00-transformer-examples` → `01-build-gpt` → `02-gpt2-reproduce` → `03-tokenizer` → `04-post-training`, plus `05-reading`. Has its own [`LLM/README.md`](./LLM/README.md) and a design log in `LLM/decisions.md`. |
+| `agent-basics/` | Tutorial track that ramps the prep: `01_async_basics`, `02_reliability`, `03_anthropic_agents`, `04_langchain`, `05_langgraph`, `06_elevenlabs`, `07_mcp`, `08_gemini_agents`, `09_openai_agents`, `10_mistral_agents`, plus the standalone `pydantic_db_validation.py`. Self-contained exercises -- run individually. |
+| `code-review/` | Timed code-review drills: `review_<n>.py` is the file to review, `review_<n>_solved.py` the fixed version, and `answer_key_<n>.md` / `rubric_<n>.md` the grading key. Open the key only after reviewing. |
 | `modal-examples-main/` | Vendored copy of the [`modal-labs/modal-examples`](https://github.com/modal-labs/modal-examples) repository, **MIT-licensed, © Modal Labs**. Used as a syntax/idiom reference while ramping on Modal Sandboxes, Volumes, scheduled functions, and web endpoints. The original `LICENSE` is preserved inside the folder. |
 
 Python dependencies are managed by [uv](https://docs.astral.sh/uv/): one
@@ -31,13 +33,15 @@ Agent guidance lives at the **repo root**, scoped to the
 
 | File | Purpose |
 |---|---|
-| `CLAUDE.md` | The agent ramp guide for Claude Code. A header note declares that bare relative paths (`modal/`, `convex/schema.ts`) refer to entries under `multiplayer-ai/`; shell snippets assume `cd multiplayer-ai` first. |
-| `AGENTS.md` | Thin pointer file so tooling that scans for `AGENTS.md` (Codex, Cursor, etc.) lands on `CLAUDE.md`. Not a byte-equivalent mirror -- intentionally short. |
+| `CLAUDE.md` | **Source of truth** -- the agent ramp guide for every coding agent. A header note declares that bare relative paths (`modal/`, `convex/schema.ts`) refer to entries under `multiplayer-ai/`; shell snippets assume `cd multiplayer-ai` first. Its [Documentation file map](./CLAUDE.md#documentation-file-map) explains how all four CLAUDE/AGENTS files relate. |
+| `AGENTS.md` | One-screen mirror of `CLAUDE.md`'s headline rules for tooling that scans for `AGENTS.md` (Codex, Cursor, etc.). No unique content -- links back to `CLAUDE.md`. |
+| `multiplayer-ai/CLAUDE.md`, `multiplayer-ai/AGENTS.md` | Pointer stubs. They exist only so the Convex CLI (`npx convex ai-files install/update`) has somewhere to write its auto-managed block. Don't add ramp content to them. |
 | `.claude/agents/convention-reviewer.md` | Project-level subagent encoding the 7 critical conventions from `CLAUDE.md`. Auto-discovered by Claude Code from anywhere in the repo; its own instructions restrict review scope to `multiplayer-ai/`. |
 
-The lab is effectively a single project (`multiplayer-ai/`) with two
-vendored read-only example folders (`agent-basics/`,
-`modal-examples-main/`) that don't carry their own conventions.
+The agent ramp covers one project (`multiplayer-ai/`). `LLM/` documents
+itself in `LLM/README.md` + `LLM/decisions.md`; `agent-basics/`,
+`code-review/` and `modal-examples-main/` are self-contained exercise
+or reference folders that don't carry their own conventions.
 Hoisting puts the ramp in front of the model regardless of cwd; the
 in-file path convention keeps the dense doc accurate without verbose
 repo-relative paths.
@@ -261,19 +265,23 @@ stays identical.
 ```
 multiagent-lab/
 ├── README.md                this file (consolidated repo overview + POC docs)
-├── CLAUDE.md                agent ramp notes (paths relative to multiplayer-ai/)
-├── AGENTS.md                pointer file for AGENTS.md-aware tooling → CLAUDE.md
+├── CLAUDE.md                agent ramp notes -- source of truth (paths relative to multiplayer-ai/)
+├── AGENTS.md                headline mirror for AGENTS.md-aware tooling → CLAUDE.md
 ├── .claude/
 │   └── agents/
 │       └── convention-reviewer.md   project subagent enforcing CLAUDE.md conventions
 ├── pyproject.toml           shared Python deps (uv; groups: dev / llm / audio)
 ├── uv.lock                  resolved lockfile -- committed, travels with pyproject.toml
-├── agent-basics/            tutorial track (01_async_basics ... 07_mcp), read-only
+├── LLM/                     from-scratch LM training lab (00-transformer-examples ... 05-reading); see LLM/README.md
+├── agent-basics/            tutorial track (01_async_basics ... 10_mistral_agents)
+├── code-review/             timed review drills + solved versions + answer keys
 ├── modal-examples-main/     Modal Labs reference (MIT, © Modal Labs), read-only
 └── multiplayer-ai/          the POC
+    ├── CLAUDE.md, AGENTS.md pointer stubs holding the Convex CLI's auto-managed block
     ├── package.json         Convex + frontend deps (npm root for this subproject)
     ├── modal/               compute plane (NOT a Python package)
-    │   ├── common.py        shared App + image defs + Volume helper + Convex HTTP wrapper + resolve_workspace_from_env
+    │   ├── serve_all.py     imports every Function module so one `modal serve` registers them all in one App
+    │   ├── common.py        shared App + image defs + Volume helper + Convex HTTP wrapper + resolve_workspace_from_env + secrets() / gateway_secrets()
     │   ├── ingress_slack.py FastAPI Slack ingress (HMAC, ACK, spawn worker)
     │   ├── ingress_teams.py Bot Framework Activity ingress (mimic, normalises to same context)
     │   ├── worker.py        spawns the agent Sandbox with the per-workspace Volume mounted
@@ -292,8 +300,9 @@ multiagent-lab/
     │   ├── proactive.ts     non-invasiveness state mutations + queries (NF2 extension)
     │   ├── skills.ts        NF3 backing store (skill_version_index)
     │   ├── audit.ts         gateway audit_log mutations
+    │   ├── runs.ts          NF4 agent_runs telemetry (save + recent / per-user queries)
     │   ├── predictions.ts   NF4 backing store
-    │   ├── llm.ts           Action: call_anthropic
+    │   ├── llm.ts           Action: call_gemini
     │   └── http.ts          HTTP endpoints (makeMutationRoute / makeQueryRoute helpers)
     ├── volume/
     │   └── workspace-dev/   the single POC tenant (workspace_id = "dev")
@@ -323,11 +332,11 @@ Skim this table before reading run instructions -- it's the answer to
 | Surface                       | Entry-point script                            | How to invoke                                                                                                                                                          |
 |-------------------------------|-----------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **All Modal Functions, unified** | `multiplayer-ai/modal/serve_all.py`        | **The canonical run.** `modal serve modal/serve_all.py` brings up the ingress + worker + gateway + scheduler + analytics in **one** process, sharing one App instance. `modal deploy modal/serve_all.py` for production. |
-| **Event harness**             | `multiplayer-ai/harness/send_event.py`        | `python harness/send_event.py --channel slack --url <ingress-url>/slack/events --text "..."`                                                                            |
+| **Event harness**             | `multiplayer-ai/harness/send_event.py`        | `uv run python harness/send_event.py --channel slack --url <ingress-url>/slack/events --text "..."`                                                                            |
 | **Convex backend**            | `multiplayer-ai/convex/` (no single script)   | `npx convex dev` from `multiplayer-ai/` -- watches `convex/*.ts` and hot-redeploys. Only needed when editing schema/routes; the agent reads deployed Convex over HTTPS. |
 | **Proactive scan (one-shot)** | `multiplayer-ai/modal/scheduler.py`           | Cron in production; `modal run modal/scheduler.py::smoke_scheduler` to fire a one-shot scan.                                                                            |
 | **Predictive observability (one-shot)** | `multiplayer-ai/modal/analytics.py` | Cron in production; `modal run modal/analytics.py::smoke_analytics` to fire a one-shot prediction.                                                                      |
-| **Slack ingress (ASGI-only)** | `multiplayer-ai/modal/ingress_slack.py`       | Advanced: `uvicorn modal.ingress_slack:web_app --reload` runs the FastAPI app on localhost without Modal -- HMAC + routing only, no worker spawn.                       |
+| **Slack ingress (ASGI-only)** | `multiplayer-ai/modal/ingress_slack.py`       | Advanced: `uv run --with uvicorn uvicorn ingress_slack:web_app --app-dir modal --reload` runs the FastAPI app on localhost without Modal -- HMAC + routing only, no worker spawn.                       |
 
 The worker (`modal/worker.py`), gateway (`modal/gateway.py`),
 ingresses, and `sandbox_agent.py` are all valid Modal Functions but
@@ -408,7 +417,7 @@ process. All paths below are relative to `multiplayer-ai/`.
 **First-time bootstrap (one extra step):**
 
 ```bash
-cd multiplayer-ai && modal serve modal/serve_all.py
+cd multiplayer-ai && uv run modal serve modal/serve_all.py
 # Look in the output for:
 #   🔨 Created web function tool_gateway =>
 #     https://<workspace>--multiplayer-ai-tool-gateway-dev.modal.run
@@ -425,13 +434,13 @@ cd multiplayer-ai
 # Pick whichever pattern fits your shell:
 export $(grep -E '^(GEMINI_API_KEY|GEMINI_MODEL)=' .env.local | sed 's/"//g')
 export TOOL_GATEWAY_URL=https://<workspace>--multiplayer-ai-tool-gateway-dev.modal.run/dispatch
-modal serve modal/serve_all.py
+uv run modal serve modal/serve_all.py
 
 # (Optional) Terminal 2 -- Convex watcher, only if editing convex/*.ts
 cd multiplayer-ai && npx convex dev
 
 # Terminal 3 -- fire the signed Slack event at the live ingress URL
-cd multiplayer-ai && python harness/send_event.py --channel slack \
+cd multiplayer-ai && uv run python harness/send_event.py --channel slack \
   --url https://<workspace>--multiplayer-ai-slack-ingress-dev.modal.run/slack/events \
   --text "summarise the last week"
 ```
@@ -478,10 +487,10 @@ and run the FastAPI app directly with uvicorn:
 cd multiplayer-ai && npx convex dev
 
 # Terminal 1 -- raw FastAPI on localhost:8000
-cd multiplayer-ai && uvicorn modal.ingress_slack:web_app --reload
+cd multiplayer-ai && uv run --with uvicorn uvicorn ingress_slack:web_app --app-dir modal --reload
 
 # Then -- harness posts at localhost
-cd multiplayer-ai && python harness/send_event.py --channel slack \
+cd multiplayer-ai && uv run python harness/send_event.py --channel slack \
   --url http://localhost:8000/slack/events \
   --text "hello agent"
 ```
@@ -496,12 +505,19 @@ modal/serve_all.py` for the full end-to-end.
 The demo path uses the harness because it requires zero Slack-side
 setup. To point a *real* Slack workspace at the agent:
 
-1. Deploy stable URLs: `modal deploy modal/serve_all.py`. (One command
-   deploys ingress + worker + gateway + crons together.)
+1. Deploy stable URLs: `uv run modal deploy modal/serve_all.py`. (One
+   command deploys ingress + worker + gateway + crons together.)
 2. Follow `multiplayer-ai/slack-integration/README.md` -- it walks
    through Slack-app creation, scopes (`app_mentions:read`,
-   `chat:write`, ...), Event Subscriptions URL, and the Modal Secret
-   that holds `SLACK_SIGNING_SECRET` + `SLACK_BOT_TOKEN`.
+   `chat:write`, ...), the Event Subscriptions URL, and which env vars
+   to export before `modal deploy` (credentials are baked from your
+   shell by `common.secrets()`, not read from a named Modal Secret).
+
+Integration credentials (`SLACK_BOT_TOKEN`, the Teams bot app id and
+password, `GITHUB_TOKEN`) go through `common.gateway_secrets()`, which
+only the `tool_gateway` Function mounts. The Sandbox never sees them. With
+the token exported, `slack.send` posts through `chat.postMessage`.
+Without it, the gateway returns `{"stubbed": true}`, as in the harness demo.
 
 The harness keeps working against the deployed URL too, which is the
 right way to smoke-test a new deployment before pointing real users at
@@ -580,21 +596,21 @@ tenant required.
 
 ```bash
 # Slack message event (default)
-python multiplayer-ai/harness/send_event.py --channel slack \
+uv run python multiplayer-ai/harness/send_event.py --channel slack \
   --url <ingress-url>/slack/events \
   --text "hello agent"
 
 # Slack url_verification challenge (one-shot, used during Slack app setup)
-python multiplayer-ai/harness/send_event.py --channel slack --verify \
+uv run python multiplayer-ai/harness/send_event.py --channel slack --verify \
   --url <ingress-url>/slack/events
 
 # Teams Activity
-python multiplayer-ai/harness/send_event.py --channel teams \
+uv run python multiplayer-ai/harness/send_event.py --channel teams \
   --url <teams-ingress-url>/teams/messages \
   --text "hello agent from teams"
 
 # Override the tenant identifiers (the resolve_workspace_id maps live in env)
-python multiplayer-ai/harness/send_event.py --channel slack --url <url> --text "x" \
+uv run python multiplayer-ai/harness/send_event.py --channel slack --url <url> --text "x" \
   --team-id T0YOUR --user-id U0YOU --slack-channel D0YOURDM
 ```
 
@@ -610,19 +626,19 @@ ingress agree out of the box -- no setup step.
 Every file in `multiplayer-ai/modal/` has its own
 `@app.local_entrypoint()`, runnable standalone with `modal run`.
 
-| Command (from `multiplayer-ai/`)        | What it verifies                                                                  |
+| Command (from `multiplayer-ai/`, prefix `uv run`) | What it verifies                                                                  |
 |-----------------------------------------|-----------------------------------------------------------------------------------|
 | `modal run modal/ingress_slack.py`      | HMAC math is internally consistent. POSTs against `SLACK_INGRESS_URL` if set.      |
 | `modal run modal/ingress_teams.py`      | Teams Activity normalises to the same context shape Slack emits.                  |
 | `modal run modal/worker.py`             | Sandbox spawns, image builds, Volume mounts, sandbox_agent runs end-to-end.       |
-| `modal run modal/gateway.py`            | Dispatcher routes by action namespace; stub branches return without external API. |
+| `modal run modal/gateway.py`            | Dispatcher routes by action namespace; every branch is exercised with empty creds, so it never makes an external call even if tokens are exported. |
 | `modal run modal/scheduler.py`          | Full 6-stage pipeline. Prints which gates dropped which candidates.               |
 | `modal run modal/analytics.py`          | Feature compute + prediction; writes a row to `workspace_predictions`.            |
 
 Direct Python invocation (for the loop itself):
 
 ```bash
-cd multiplayer-ai/modal && python sandbox_agent.py '{"workspace_id":"dev","channel":"D01","channel_type":"im","user_id":"U01","message":"hello","channel_origin":"slack"}'
+cd multiplayer-ai/modal && uv run python sandbox_agent.py '{"workspace_id":"dev","channel":"D01","channel_type":"im","user_id":"U01","message":"hello","channel_origin":"slack"}'
 ```
 
 Useful when iterating on the agent loop without paying the Modal

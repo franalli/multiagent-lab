@@ -116,7 +116,7 @@ observability). POC scope; the deliverable is the demo.
 
 | File                | Role                                                                            |
 |---------------------|---------------------------------------------------------------------------------|
-| `common.py`         | App + image defs + Volume helper + `convex_post` + `convex_query` + secrets + `COST_PER_LLM_CALL_USD` + `resolve_workspace_from_env`. |
+| `common.py`         | App + image defs + Volume helper + `convex_post` + `convex_query` + secrets (`secrets()` for every Function + Sandbox; `gateway_secrets()` adds integration creds for the gateway only) + `COST_PER_LLM_CALL_USD` + `resolve_workspace_from_env`. |
 | `ingress_slack.py`  | FastAPI Slack ingress -- HMAC, ACK <3s, `Function.spawn(agent_worker)`.         |
 | `ingress_teams.py`  | Bot Framework Activity ingress (mimic) -- normalises to same context.           |
 | `worker.py`         | Spawns the Sandbox with per-workspace Volume mounted.                           |
@@ -130,7 +130,10 @@ observability). POC scope; the deliverable is the demo.
 - **New agent-callable tool**: extend `AGENT_TOOLS_SOURCE` in
   `modal/sandbox_agent.py` (function + add to system prompt) and add a
   branch in `dispatch()` in `modal/gateway.py` if it needs to egress.
-  Per-workspace creds belong in `credentials_for(workspace_id, action)`.
+  Per-workspace creds belong in `credentials_for(workspace_id, action)`;
+  add the env key to `GATEWAY_CREDENTIAL_KEYS` in `modal/common.py` so
+  `gateway_secrets()` forwards it. **Never** add creds to `secrets()` --
+  the worker mounts that on the Sandbox, where LLM-generated code runs.
 
 - **New Convex table**: add to `convex/schema.ts`. If the vocabulary is
   a literal union, extract to `convex/constants.ts` (validator + type +

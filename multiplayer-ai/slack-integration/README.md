@@ -29,30 +29,51 @@ The POC reaches Slack two ways:
 6. **App Credentials** -- copy the Signing Secret; it is the value for
    `SLACK_SIGNING_SECRET`.
 
-## Modal Secret
+## Credentials
 
-Create or update the multiplayer-ai Secret in Modal:
+`secrets()` in `modal/common.py` builds a `modal.Secret.from_dict(...)` at
+deploy time from **your shell's environment**. The named
+`multiplayer-ai-secrets` Secret is not read unless you swap in
+`Secret.from_name`. So configuring credentials means exporting them
+before you deploy:
 
 ```bash
-modal secret create multiplayer-ai-secrets \
-  SLACK_SIGNING_SECRET=<from-step-6> \
-  SLACK_BOT_TOKEN=<from-step-5> \
-  ANTHROPIC_API_KEY=<your-key> \
-  CONVEX_SITE_URL=https://exuberant-albatross-781.convex.site
+cd multiplayer-ai
+export SLACK_SIGNING_SECRET=<from-step-6>
+export SLACK_BOT_TOKEN=<from-step-5>          # gateway only -- see below
+export GEMINI_API_KEY=<your-key>              # already in .env.local
+export GEMINI_MODEL=gemini-3-flash-preview    # already in .env.local
+export CONVEX_SITE_URL=https://exuberant-albatross-781.convex.site  # optional, this is the default
+uv run modal deploy modal/serve_all.py
 ```
 
-The dev defaults in `modal/common.py` mean the POC still runs without this
-Secret -- the harness will round-trip, the LLM call falls back to a stub,
-the gateway returns "stubbed: true" for outbound posts.
+`SLACK_BOT_TOKEN` goes through `common.gateway_secrets()`, which only the
+`tool_gateway` Function mounts. It is deliberately **not** in `secrets()`,
+because the worker hands that list to the Sandbox, where LLM-generated code
+runs. The gateway's `slack.send` calls `chat.postMessage` with the token.
+Replies go into the thread when the triggering message was threaded
+(`thread_ts`), and otherwise post top-level.
+
+The dev defaults in `modal/common.py` mean the POC still runs with none of
+these set. The harness round-trips (the ingress falls back to the same dev
+signing secret the harness uses), the LLM call falls back to a stub, and
+without `SLACK_BOT_TOKEN` the gateway returns `{"stubbed": true, ...}`
+instead of posting.
+
+A Slack-side failure (e.g. `not_in_channel`, `invalid_auth`) comes back
+from the gateway as a 502, and the audit log records it as `error`. The
+agent still records its reply and `agent_runs` row in Convex. If replies
+don't appear in Slack, check `audit_log` first. The usual cause is the bot
+not being a member of the channel (`/invite @<bot>`).
 
 ## Verifying
 
 ```bash
 # Local FastAPI dev server (no Modal):
-cd multiplayer-ai && uvicorn modal.ingress_slack:web_app --reload
+cd multiplayer-ai && uv run --with uvicorn uvicorn ingress_slack:web_app --app-dir modal --reload
 
 # In another shell:
-python harness/send_event.py --channel slack \
+uv run python harness/send_event.py --channel slack \
   --url http://localhost:8000/slack/events \
   --text "hello agent"
 ```
